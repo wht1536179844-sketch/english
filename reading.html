@@ -115,6 +115,12 @@ details.qs summary:hover{color:var(--red)}
 #lookup .lk-ph{font-size:13px;color:var(--ink-soft)}
 #lookup .lk-base{font-size:12px;color:var(--ink-soft)}
 #lookup .lk-zh{font-size:14px;line-height:1.7;margin-top:6px;color:var(--ink)}
+#lookup .lk-list{margin-top:8px;max-height:42vh;overflow-y:auto;display:none}
+#lookup .lk-item{display:flex;gap:10px;padding:5px 0;border-top:1px dashed var(--grid)}
+#lookup .lk-item .lw{font-family:var(--serif);font-weight:700;font-size:15px;min-width:96px;flex:none;color:var(--ink)}
+#lookup .lk-item .lz{font-size:13.5px;line-height:1.55;color:var(--ink-soft)}
+#lookup .lk-item .miss{color:var(--ink-soft);opacity:.6}
+#lookup .lk-trans{font-size:16px;line-height:1.75;color:var(--ink);font-weight:500}
 #lookup .lk-close{
   position:absolute;top:8px;right:10px;background:none;color:var(--ink-soft);
   font-size:16px;width:26px;height:26px;border-radius:50%;
@@ -181,7 +187,8 @@ td.today-col{background:#FFF8DF}
   <div class="progress"><i id="pbar" style="width:0"></i></div>
   <div class="ptxt" id="ptxt"></div>
   <div class="legend">
-    每天精读当天的文章，<b>点击任何看不懂的单词</b>，底部会弹出中文释义（带音标，可点 🔊 听发音）。
+    每天精读当天的文章，<b>点击任何看不懂的单词</b>，底部会弹出中文释义（带音标，可点 🔊 听发音）；
+    也可以<b>按住拖动选中整句</b>，卡片会给出<b>整句中文翻译</b>（需联网）并逐词列出释义。
     在<b>第 1、2、4、7 天</b>重读当天那组文章并打卡——重读时重点回想上次点过的生词。
     文末「练习题」可展开自测（原 PDF 未附答案）。打卡数据保存在本机浏览器里。
   </div>
@@ -198,6 +205,7 @@ td.today-col{background:#FFF8DF}
     <span class="lk-base" id="lkBase"></span>
   </div>
   <div class="lk-zh" id="lkZh"></div>
+  <div class="lk-list" id="lkList"></div>
 </div>
 
 <script>
@@ -252,6 +260,7 @@ function speak(word,btn){
 let curWordEl=null;
 function lookup(word,el){
   const box=document.getElementById("lookup");
+  document.getElementById("lkList").style.display="none";
   const w=word.toLowerCase().replace(/’/g,"'");
   const hit=DICT[w];
   document.getElementById("lkWord").textContent=word;
@@ -284,6 +293,78 @@ function bindWords(root){
     s.onclick=e=>{e.stopPropagation();lookup(s.textContent,s)};
   });
 }
+
+/* ====== 选中整句 / 多个词：逐词释义 + 整句朗读 ====== */
+const WORD_RE=/[A-Za-z]+(?:[’'-][A-Za-z]+)*/g;
+/* 在线翻译：带超时，Google 优先、MyMemory 兜底 */
+async function mtFetch(url,ms){
+  const c=new AbortController();const id=setTimeout(()=>c.abort(),ms||8500);
+  try{const r=await fetch(url,{signal:c.signal});clearTimeout(id);return r&&r.ok?r:null;}
+  catch(e){clearTimeout(id);return null;}
+}
+function parseGoogle(j){return (j&&j[0]||[]).map(s=>s&&s[0]).filter(Boolean).join("");}
+async function mtTranslate(text){
+  const q=encodeURIComponent(text);
+  const gUrl="https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q="+q;
+  // 直连 Google
+  const google=async()=>{const r=await mtFetch(gUrl);if(!r)throw 0;const zh=parseGoogle(await r.json());if(!zh)throw 0;return zh;};
+  // 经 allorigins 代理 Google（绕开 CORS / file:// 限制）
+  const gViaAll=async()=>{const r=await mtFetch("https://api.allorigins.win/raw?url="+encodeURIComponent(gUrl));if(!r)throw 0;const zh=parseGoogle(await r.json());if(!zh)throw 0;return zh;};
+  // 经 corsproxy.io 代理 Google
+  const gViaCors=async()=>{const r=await mtFetch("https://corsproxy.io/?url="+encodeURIComponent(gUrl));if(!r)throw 0;const zh=parseGoogle(await r.json());if(!zh)throw 0;return zh;};
+  // MyMemory 直连（有每日免费额度）
+  const mymem=async()=>{const r=await mtFetch("https://api.mymemory.translated.net/get?q="+q+"&langpair=en|zh-CN");if(!r)throw 0;const j=await r.json();const zh=j&&j.responseData&&j.responseData.translatedText;if(!zh||/^(PLEASE|MYMEMORY)/i.test(zh))throw 0;return zh;};
+  try{return await Promise.any([google(),gViaAll(),gViaCors(),mymem()]);}catch(e){return null;}
+}
+let phraseSeq=0;
+async function lookupPhrase(text){
+  const box=document.getElementById("lookup");
+  const words=text.match(WORD_RE)||[];
+  if(!words.length)return;
+  const disp=text.replace(/\s+/g," ").trim();
+  const mySeq=++phraseSeq;
+  document.getElementById("lkWord").textContent=disp.length>44?disp.slice(0,44)+"…":disp;
+  document.getElementById("lkPh").textContent="";
+  document.getElementById("lkBase").textContent="选中 "+words.length+" 词 · 整句翻译";
+  const zhBox=document.getElementById("lkZh");
+  zhBox.textContent="正在翻译整句…";
+  /* 逐词释义：作补充，也是联网失败时的兜底 */
+  const list=document.getElementById("lkList");
+  list.innerHTML="";
+  const seen=new Set();
+  words.forEach(wd=>{
+    const w=wd.toLowerCase().replace(/’/g,"'");
+    if(seen.has(w))return;seen.add(w);
+    const hit=DICT[w];
+    const item=document.createElement("div");item.className="lk-item";
+    const lw=document.createElement("span");lw.className="lw";lw.textContent=wd;
+    const lz=document.createElement("span");lz.className="lz";
+    if(hit){lz.textContent=(hit[0]?"["+hit[0]+"] ":"")+(hit[2]||"—");}
+    else{lz.textContent="未收录（人名/地名）";lz.classList.add("miss");}
+    item.appendChild(lw);item.appendChild(lz);
+    list.appendChild(item);
+  });
+  list.style.display="block";
+  document.getElementById("lkSpk").onclick=()=>speak(disp,document.getElementById("lkSpk"));
+  box.classList.add("show");
+  if(curWordEl){curWordEl.classList.remove("sel");curWordEl=null;}
+  const zh=await mtTranslate(disp);
+  if(mySeq!==phraseSeq)return;            // 已被新的选择覆盖
+  if(zh){zhBox.innerHTML="";const t=document.createElement("div");t.className="lk-trans";t.textContent=zh;zhBox.appendChild(t);}
+  else{zhBox.textContent="翻译失败：请用「网址」方式打开本页（GitHub 链接），不要直接双击本地文件（file:// 会被翻译代理拒绝）；并确认网络/VPN 正常。以下为逐词释义：";}
+}
+function handleSelection(){
+  const sel=window.getSelection();
+  if(!sel||sel.isCollapsed)return;
+  const txt=sel.toString();
+  const words=(txt.match(WORD_RE)||[]);
+  if(words.length<2)return;               // 少于两个词交给单击查词
+  const bx=document.getElementById("artBox");
+  if(!bx.contains(sel.anchorNode)||!bx.contains(sel.focusNode))return;
+  lookupPhrase(txt);
+}
+document.addEventListener("mouseup",()=>setTimeout(handleSelection,0));
+document.addEventListener("touchend",()=>setTimeout(handleSelection,10));
 
 /* ================= 渲染 ================= */
 let curTab=1,curArt=0; // curTab: 1..8; curArt: PLAN[curTab-1] 里的下标
