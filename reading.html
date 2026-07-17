@@ -122,8 +122,8 @@ details.qs summary:hover{color:var(--red)}
 #lookup .lk-item .miss{color:var(--ink-soft);opacity:.6}
 #lookup .lk-trans{font-size:16px;line-height:1.75;color:var(--ink);font-weight:500}
 #lookup .lk-close{
-  position:absolute;top:8px;right:10px;background:none;color:var(--ink-soft);
-  font-size:16px;width:26px;height:26px;border-radius:50%;
+  position:absolute;top:6px;right:8px;background:none;color:var(--ink-soft);
+  font-size:22px;line-height:1;width:38px;height:38px;border-radius:50%;cursor:pointer;z-index:2;
 }
 #lookup .lk-close:hover{color:var(--red)}
 .spk{
@@ -279,10 +279,13 @@ function lookup(word,el){
   curWordEl=el;if(el)el.classList.add("sel");
   speak(word,document.getElementById("lkSpk"));
 }
-document.querySelector("#lookup .lk-close").onclick=()=>{
+function closeLookup(){
   document.getElementById("lookup").classList.remove("show");
   if(curWordEl){curWordEl.classList.remove("sel");curWordEl=null}
-};
+  if(typeof phraseSeq==="number")phraseSeq++;      // 取消在途翻译
+  try{window.getSelection().removeAllRanges();}catch(e){}   // 清掉选区，避免被重新触发
+}
+document.querySelector("#lookup .lk-close").onclick=closeLookup;
 
 /* 把一段文字包装成可点词的 HTML */
 function wrapWords(text){
@@ -298,7 +301,7 @@ function bindWords(root){
 const WORD_RE=/[A-Za-z]+(?:[’'-][A-Za-z]+)*/g;
 /* 在线翻译：带超时，Google 优先、MyMemory 兜底 */
 async function mtFetch(url,ms){
-  const c=new AbortController();const id=setTimeout(()=>c.abort(),ms||8500);
+  const c=new AbortController();const id=setTimeout(()=>c.abort(),ms||7000);
   try{const r=await fetch(url,{signal:c.signal});clearTimeout(id);return r&&r.ok?r:null;}
   catch(e){clearTimeout(id);return null;}
 }
@@ -306,15 +309,22 @@ function parseGoogle(j){return (j&&j[0]||[]).map(s=>s&&s[0]).filter(Boolean).joi
 async function mtTranslate(text){
   const q=encodeURIComponent(text);
   const gUrl="https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q="+q;
-  // 直连 Google
-  const google=async()=>{const r=await mtFetch(gUrl);if(!r)throw 0;const zh=parseGoogle(await r.json());if(!zh)throw 0;return zh;};
-  // 经 allorigins 代理 Google（绕开 CORS / file:// 限制）
-  const gViaAll=async()=>{const r=await mtFetch("https://api.allorigins.win/raw?url="+encodeURIComponent(gUrl));if(!r)throw 0;const zh=parseGoogle(await r.json());if(!zh)throw 0;return zh;};
-  // 经 corsproxy.io 代理 Google
-  const gViaCors=async()=>{const r=await mtFetch("https://corsproxy.io/?url="+encodeURIComponent(gUrl));if(!r)throw 0;const zh=parseGoogle(await r.json());if(!zh)throw 0;return zh;};
-  // MyMemory 直连（有每日免费额度）
-  const mymem=async()=>{const r=await mtFetch("https://api.mymemory.translated.net/get?q="+q+"&langpair=en|zh-CN");if(!r)throw 0;const j=await r.json();const zh=j&&j.responseData&&j.responseData.translatedText;if(!zh||/^(PLEASE|MYMEMORY)/i.test(zh))throw 0;return zh;};
-  try{return await Promise.any([google(),gViaAll(),gViaCors(),mymem()]);}catch(e){return null;}
+  const eg=encodeURIComponent(gUrl);
+  // 取 Google JSON（可经代理），pick 用于从代理包装里取出真正的 JSON
+  const viaG=(u,pick)=>async()=>{const r=await mtFetch(u);if(!r)throw 0;let d=await r.json();if(pick)d=pick(d);const zh=parseGoogle(d);if(!zh)throw 0;return zh;};
+  const myMem=async()=>{const r=await mtFetch("https://api.mymemory.translated.net/get?q="+q+"&langpair=en|zh-CN");if(!r)throw 0;const j=await r.json();const zh=j&&j.responseData&&j.responseData.translatedText;if(!zh||/^(PLEASE|MYMEMORY)/i.test(zh))throw 0;return zh;};
+  const build=()=>[
+    viaG("https://corsproxy.io/?url="+eg)(),
+    viaG("https://api.codetabs.com/v1/proxy/?quest="+eg)(),
+    viaG("https://api.allorigins.win/raw?url="+eg)(),
+    viaG("https://api.allorigins.win/get?url="+eg, j=>JSON.parse(j.contents))(),
+    viaG(gUrl)(),
+    myMem(),
+  ];
+  for(let round=0;round<2;round++){
+    try{return await Promise.any(build());}catch(e){}
+  }
+  return null;
 }
 let phraseSeq=0;
 async function lookupPhrase(text){
@@ -351,7 +361,7 @@ async function lookupPhrase(text){
   const zh=await mtTranslate(disp);
   if(mySeq!==phraseSeq)return;            // 已被新的选择覆盖
   if(zh){zhBox.innerHTML="";const t=document.createElement("div");t.className="lk-trans";t.textContent=zh;zhBox.appendChild(t);}
-  else{zhBox.textContent="翻译失败：请用「网址」方式打开本页（GitHub 链接），不要直接双击本地文件（file:// 会被翻译代理拒绝）；并确认网络/VPN 正常。以下为逐词释义：";}
+  else{zhBox.textContent="整句翻译暂时没成功（免费翻译线路偶尔会抽风）——重新选一次即可重试；如仍不行请连上 VPN。以下先给出逐词释义：";}
 }
 function handleSelection(){
   const sel=window.getSelection();
@@ -363,8 +373,9 @@ function handleSelection(){
   if(!bx.contains(sel.anchorNode)||!bx.contains(sel.focusNode))return;
   lookupPhrase(txt);
 }
-document.addEventListener("mouseup",()=>setTimeout(handleSelection,0));
-document.addEventListener("touchend",()=>setTimeout(handleSelection,10));
+function inLookup(e){return e&&e.target&&e.target.closest&&e.target.closest("#lookup");}
+document.addEventListener("mouseup",e=>{if(inLookup(e))return;setTimeout(handleSelection,0);});
+document.addEventListener("touchend",e=>{if(inLookup(e))return;setTimeout(handleSelection,10);});
 
 /* ================= 渲染 ================= */
 let curTab=1,curArt=0; // curTab: 1..8; curArt: PLAN[curTab-1] 里的下标
