@@ -349,7 +349,28 @@ const grammarMap = {
         }
       ]
     }
-    /* ▼ 以后新语法板块（如主谓宾、时态等）继续往这里加 ▼ */
+    {
+      title: "主谓宾句型",
+      sub: "主语 + 谓语动词 + 宾语",
+      color: "var(--branch5)",
+      children: [
+        {
+          title: "谓语动词的规矩",
+          children: [
+            {
+              title: "他/她/它 或 数量一个，动词加S",
+              detail: `<p>主语是<b>he / she / it</b>，或者<b>数量一个</b>的人或物，谓语动词要加 <b>S</b>（三单）。</p>
+                       <p class="rule"><span class="en">He run<b>s</b> every day.</span> <span class="zh">他每天跑步</span></p>
+                       <p class="rule"><span class="en">She like<b>s</b> apples.</span> <span class="zh">她喜欢苹果</span></p>
+                       <p class="rule"><span class="en">It eat<b>s</b> fish.</span> <span class="zh">它吃鱼</span></p>
+                       <p class="rule"><span class="en">The boy play<b>s</b> basketball.</span> <span class="zh">这个男孩打篮球（数量一个）</span></p>
+                       <p class="rule">对比：<span class="en">They run every day.</span> / <span class="en">We like apples.</span> <span class="zh">（多个，动词不加S）</span></p>`
+            }
+          ]
+        }
+      ]
+    }
+    /* ▼ 以后新语法板块（如时态等）继续往这里加 ▼ */
   ]
 };
 
