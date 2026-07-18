@@ -62,6 +62,9 @@ h1 .en{font-family:var(--serif);font-style:italic;font-size:14px;color:var(--red
 .qs .qrow .qen{flex:1;font-family:var(--serif);font-size:15px}
 .qs .qrow .qzh{flex:1;font-size:14px;color:var(--ink);cursor:pointer;border-radius:6px;padding:1px 8px}
 .qs .qrow .qzh.mask{color:transparent;background:var(--grid);user-select:none}
+.story.eng-only .sent .zh{display:none}
+.story.eng-only .sent{padding:6px 4px}
+#btnEngOnly.on,#btnReadAll.on{border-color:var(--red);color:var(--red);background:var(--red-soft)}
 .artnav{display:flex;justify-content:space-between;padding:12px 16px 8px}
 /* 复习表 */
 table{width:100%;border-collapse:collapse;font-size:13px}
@@ -116,6 +119,8 @@ td:first-child,th:first-child{text-align:left}
     <span class="tip">① 点<b>英文单词</b>查释义（离线）　② 点<b>右侧中文</b>显示/遮挡译文</span>
     <button id="btnShowAll">全部显示译文</button>
     <button id="btnMaskAll">全部遮挡译文</button>
+    <button id="btnEngOnly">只看英文</button>
+    <button id="btnReadAll">🔊 朗读全文</button>
   </div>
   <div class="story" id="artBox"></div>
   <div class="artnav">
@@ -162,7 +167,9 @@ const store={
   get checks(){try{return JSON.parse(localStorage.getItem("bw2_checks"))||{}}catch(e){return{}}},
   set checks(v){localStorage.setItem("bw2_checks",JSON.stringify(v))},
   get reveal(){return localStorage.getItem("bw2_reveal")==="1"},
-  set reveal(v){localStorage.setItem("bw2_reveal",v?"1":"0")}
+  set reveal(v){localStorage.setItem("bw2_reveal",v?"1":"0")},
+  get engOnly(){return localStorage.getItem("bw2_engonly")==="1"},
+  set engOnly(v){localStorage.setItem("bw2_engonly",v?"1":"0")}
 };
 function toYMD(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 if(!store.start){store.start=toYMD(new Date())}
@@ -216,6 +223,7 @@ function bindStory(root){
 }
 
 function render(){
+  if(typeof reading!=="undefined"&&reading)stopReadAll();
   const dn=dayIndex();
   document.getElementById("startDate").textContent=store.start;
   document.getElementById("dayNo").textContent=dn;
@@ -247,12 +255,8 @@ function render(){
   st.sents.forEach(p=>{
     html+='<div class="sent"><div class="en">'+wrapWords(esc(p[0]))+'</div><div class="zh'+(masked?" mask":"")+'">'+esc(p[1])+'</div></div>';
   });
-  if(st.qs&&st.qs.length){
-    html+='<div class="qs"><div style="font-size:13.5px;color:var(--ink-soft);margin-bottom:6px">练习题（点中文看参考答案方向）</div>';
-    st.qs.forEach(q=>{html+='<div class="qrow"><div class="qen">'+wrapWords(esc(q[0]))+'</div><div class="qzh'+(masked?" mask":"")+'">'+esc(q[1])+'</div></div>';});
-    html+='</div>';
-  }
   bx.innerHTML=html;bindStory(bx);
+  bx.classList.toggle("eng-only",!!store.engOnly);
   document.getElementById("btnPrev").disabled=curTab===1;
   document.getElementById("btnNext").disabled=curTab===PLAN.length;
 
@@ -275,8 +279,30 @@ function render(){
 
 document.getElementById("btnPrev").onclick=()=>{if(curTab>1){curTab--;render();window.scrollTo({top:document.getElementById("tabs").offsetTop,behavior:"smooth"});}};
 document.getElementById("btnNext").onclick=()=>{if(curTab<PLAN.length){curTab++;render();window.scrollTo({top:document.getElementById("tabs").offsetTop,behavior:"smooth"});}};
-document.getElementById("btnShowAll").onclick=()=>{document.querySelectorAll("#artBox .zh,#artBox .qzh").forEach(z=>z.classList.remove("mask"));};
-document.getElementById("btnMaskAll").onclick=()=>{document.querySelectorAll("#artBox .zh,#artBox .qzh").forEach(z=>z.classList.add("mask"));};
+document.getElementById("btnShowAll").onclick=()=>{document.querySelectorAll("#artBox .zh").forEach(z=>z.classList.remove("mask"));};
+document.getElementById("btnMaskAll").onclick=()=>{document.querySelectorAll("#artBox .zh").forEach(z=>z.classList.add("mask"));};
+const btnEngOnly=document.getElementById("btnEngOnly");
+btnEngOnly.classList.toggle("on",store.engOnly);
+btnEngOnly.onclick=()=>{store.engOnly=!store.engOnly;btnEngOnly.classList.toggle("on",store.engOnly);document.getElementById("artBox").classList.toggle("eng-only",store.engOnly);};
+
+const btnReadAll=document.getElementById("btnReadAll");
+let readQueue=[],readIdx=0,reading=false;
+function stopReadAll(){speechSynthesis.cancel();reading=false;btnReadAll.classList.remove("on");btnReadAll.textContent="🔊 朗读全文";}
+function speakNext(){
+  if(!reading||readIdx>=readQueue.length){stopReadAll();return;}
+  const u=new SpeechSynthesisUtterance(readQueue[readIdx]);u.lang="en-US";u.rate=.92;
+  if(!voiceCache)voiceCache=pickVoice();if(voiceCache)u.voice=voiceCache;
+  u.onend=()=>{readIdx++;speakNext();};
+  u.onerror=()=>{readIdx++;speakNext();};
+  speechSynthesis.speak(u);
+}
+btnReadAll.onclick=()=>{
+  if(reading){stopReadAll();return;}
+  const st=STORIES[PLAN[curTab-1][0]];
+  readQueue=[st.en,...st.sents.map(p=>p[0])];readIdx=0;reading=true;
+  btnReadAll.classList.add("on");btnReadAll.textContent="⏹ 停止朗读";
+  speechSynthesis.cancel();speakNext();
+};
 document.getElementById("btnReset").onclick=()=>{if(confirm("确定清空全部打卡记录，并把今天设为第 1 天吗？")){localStorage.removeItem("bw2_checks");store.start=toYMD(new Date());curTab=1;render();}};
 render();
 </script>
