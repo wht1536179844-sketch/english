@@ -121,6 +121,7 @@ td:first-child,th:first-child{text-align:left}
     <button id="btnMaskAll">全部遮挡译文</button>
     <button id="btnEngOnly">只看英文</button>
     <button id="btnReadAll">🔊 朗读全文</button>
+    <button id="btnPauseResume" style="display:none">⏸ 暂停朗读</button>
   </div>
   <div class="story" id="artBox"></div>
   <div class="artnav">
@@ -286,8 +287,13 @@ btnEngOnly.classList.toggle("on",store.engOnly);
 btnEngOnly.onclick=()=>{store.engOnly=!store.engOnly;btnEngOnly.classList.toggle("on",store.engOnly);document.getElementById("artBox").classList.toggle("eng-only",store.engOnly);};
 
 const btnReadAll=document.getElementById("btnReadAll");
-let readQueue=[],readIdx=0,reading=false;
-function stopReadAll(){speechSynthesis.cancel();reading=false;btnReadAll.classList.remove("on");btnReadAll.textContent="🔊 朗读全文";}
+const btnPauseResume=document.getElementById("btnPauseResume");
+let readQueue=[],readIdx=0,reading=false,paused=false;
+function stopReadAll(){
+  speechSynthesis.cancel();reading=false;paused=false;
+  btnReadAll.classList.remove("on");btnReadAll.textContent="🔊 朗读全文";
+  btnPauseResume.style.display="none";btnPauseResume.classList.remove("on");btnPauseResume.textContent="⏸ 暂停朗读";
+}
 function speakNext(){
   if(!reading||readIdx>=readQueue.length){stopReadAll();return;}
   const u=new SpeechSynthesisUtterance(readQueue[readIdx]);u.lang="en-US";u.rate=.92;
@@ -299,9 +305,15 @@ function speakNext(){
 btnReadAll.onclick=()=>{
   if(reading){stopReadAll();return;}
   const st=STORIES[PLAN[curTab-1][0]];
-  readQueue=[st.en,...st.sents.map(p=>p[0])];readIdx=0;reading=true;
+  readQueue=[st.en,...st.sents.map(p=>p[0])];readIdx=0;reading=true;paused=false;
   btnReadAll.classList.add("on");btnReadAll.textContent="⏹ 停止朗读";
+  btnPauseResume.style.display="";btnPauseResume.classList.remove("on");btnPauseResume.textContent="⏸ 暂停朗读";
   speechSynthesis.cancel();speakNext();
+};
+btnPauseResume.onclick=()=>{
+  if(!reading)return;
+  if(paused){speechSynthesis.resume();paused=false;btnPauseResume.classList.remove("on");btnPauseResume.textContent="⏸ 暂停朗读";}
+  else{speechSynthesis.pause();paused=true;btnPauseResume.classList.add("on");btnPauseResume.textContent="▶ 继续朗读";}
 };
 document.getElementById("btnReset").onclick=()=>{if(confirm("确定清空全部打卡记录，并把今天设为第 1 天吗？")){localStorage.removeItem("bw2_checks");store.start=toYMD(new Date());curTab=1;render();}};
 render();
