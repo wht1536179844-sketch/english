@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英语语法大地图</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #f4f7fb;
+    --line: #b8c6dd;
+    --root-color: #3b5bdb;
+    --branch1: #1971c2;
+    --branch2: #2f9e44;
+    --branch3: #e8590c;
+    --branch4: #9c36b5;
+    --branch5: #c92a2a;
+    --card-bg: #ffffff;
+    --text: #23324a;
+  }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* 顶栏 */
+  header {
+    position: fixed; top: 0; left: 0; right: 0; height: 56px;
+    background: #ffffffee; backdrop-filter: blur(6px);
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 20px; z-index: 100;
+    box-shadow: 0 1px 6px rgba(30,50,90,.08);
+  }
+  header h1 { font-size: 18px; color: var(--root-color); }
+  header .tip { font-size: 12px; color: #7b8aa5; }
+  header button {
+    margin-left: auto; border: 1px solid #d0d9ea; background: #fff;
+    border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer;
+    color: #3b5bdb;
+  }
+  header button:hover { background: #eef2ff; }
+
+  /* 画布：可拖动 */
+  #viewport {
+    position: absolute; inset: 0; top: 56px;
+    cursor: grab; overflow: hidden;
+  }
+  #viewport.dragging { cursor: grabbing; }
+  #canvas {
+    position: absolute; left: 0; top: 0;
+    transform-origin: 0 0;
+    min-width: 2000px; min-height: 1400px;
+    padding: 60px;
+  }
+
+  /* 思维导图树形布局 */
+  .tree { display: flex; align-items: center; }
+  .node-wrap { display: flex; align-items: center; }
+  .children {
+    display: flex; flex-direction: column; gap: 14px;
+    margin-left: 46px; position: relative;
+  }
+  .child-item { display: flex; align-items: center; position: relative; }
+  /* 连接线 */
+  .child-item::before {
+    content: ""; position: absolute; left: -46px; top: 50%;
+    width: 46px; height: 2px; background: var(--line);
+  }
+  .children::before {
+    content: ""; position: absolute; left: -46px; top: 0; bottom: 0;
+    width: 2px; background: transparent;
+  }
+  /* 垂直干线 */
+  .children .child-item:not(:only-child)::after {
+    content: ""; position: absolute; left: -46px; width: 2px; background: var(--line);
+  }
+  .children .child-item:first-child:not(:only-child)::after { top: 50%; bottom: -7px; }
+  .children .child-item:last-child:not(:only-child)::after { top: -7px; bottom: 50%; }
+  .children .child-item:not(:first-child):not(:last-child)::after { top: -7px; bottom: -7px; }
+
+  /* 节点样式 */
+  .node {
+    background: var(--card-bg);
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    box-shadow: 0 2px 8px rgba(30,50,90,.07);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: box-shadow .15s, transform .15s;
+    position: relative;
+  }
+  .node:hover { box-shadow: 0 4px 14px rgba(30,50,90,.16); transform: translateY(-1px); }
+
+  .node.root {
+    background: var(--root-color); color: #fff; border-color: var(--root-color);
+    font-size: 22px; font-weight: bold; padding: 18px 30px; border-radius: 16px;
+  }
+  .node.level1 { font-size: 17px; font-weight: bold; padding: 13px 22px; color: #fff; }
+  .node.level2 { font-weight: bold; }
+
+  .node .sub { display: block; font-size: 12px; font-weight: normal; opacity: .75; margin-top: 2px; white-space: nowrap; }
+
+  /* 展开/收起小圆点 */
+  .toggle {
+    position: absolute; right: -13px; top: 50%; transform: translateY(-50%);
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--line);
+    font-size: 12px; line-height: 16px; text-align: center; color: #5c7099;
+    z-index: 2;
+  }
+
+  /* 详情卡片（叶子知识点） */
+  .node.leaf { white-space: normal; max-width: 380px; cursor: default; }
+  .node.leaf .detail { font-size: 13px; color: #51627e; margin-top: 6px; display: none; }
+  .node.leaf.open .detail { display: block; }
+  .node.leaf { cursor: pointer; }
+  .node.leaf .detail .en { color: #1971c2; font-weight: bold; }
+  .node.leaf .detail .zh { color: #868e96; }
+  .node.leaf .detail p { margin: 4px 0; }
+  .node.leaf .detail .rule { background: #f1f5fb; border-radius: 6px; padding: 6px 8px; margin: 6px 0; }
+
+  /* 方位介词图解 */
+  .prep-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+  .prep-grid figure { text-align: center; background: #f8fafd; border-radius: 8px; padding: 4px 2px; }
+  .prep-grid figcaption { font-size: 12px; font-weight: bold; color: #1971c2; line-height: 1.3; }
+  .prep-grid figcaption .cn { color: #868e96; font-weight: normal; font-size: 11px; }
+
+  .collapsed > .children { display: none; }
+
+  footer.hint {
+    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    background: #ffffffcc; padding: 6px 18px; border-radius: 20px;
+    font-size: 12px; color: #7b8aa5; z-index: 100;
+    box-shadow: 0 1px 6px rgba(30,50,90,.08);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗺️ 英语语法大地图</h1>
+  <span class="tip">持续补充中 · 当前板块：主系表</span>
+  <button onclick="resetView()">回到中心</button>
+</header>
+
+<div id="viewport">
+  <div id="canvas"></div>
+</div>
+
+<footer class="hint">拖动空白处移动地图 · 滚轮缩放 · 点节点展开/收起 · 点知识卡查看详情</footer>
+
+<script>
+/* ================================================================
+   数据区：以后补充新语法知识，只需要往这个对象里加节点即可。
+   节点字段说明：
+   - title  : 节点标题
+   - sub    : 副标题（小字，可省略）
+   - color  : 分支主题色（只在一级分支设置，可省略）
+   - detail : 详情内容（HTML，叶子知识卡点击展开，可省略）
+   - children : 子节点数组（可省略）
+   ================================================================ */
+/* --- 方位图解绘图小工具（橙盒子 + 绿小球）--- */
+function cube(x, y) {
+  return `<rect x="${x}" y="${y+12}" width="40" height="40" fill="#e07b39" stroke="#8c4a1f" stroke-width="2"/>`
+       + `<polygon points="${x},${y+12} ${x+12},${y} ${x+52},${y} ${x+40},${y+12}" fill="#f2a65e" stroke="#8c4a1f" stroke-width="2"/>`
+       + `<polygon points="${x+40},${y+12} ${x+52},${y} ${x+52},${y+40} ${x+40},${y+52}" fill="#c05f2a" stroke="#8c4a1f" stroke-width="2"/>`;
+}
+function ball(cx, cy) {
+  return `<circle cx="${cx}" cy="${cy}" r="12" fill="#7bbf4e" stroke="#4a8a2a" stroke-width="2"/>`;
+}
+function fig(svg, en, zh, vb) {
+  return `<figure><svg viewBox="${vb || '0 0 100 100'}" width="80" height="72">${svg}</svg>`
+       + `<figcaption>${en}<br><span class="cn">${zh}</span></figcaption></figure>`;
+}
+const prepFigures =
+  fig( /* in：球在盒子里（下半被前壁挡住） */
+    `<polygon points="25,47 37,35 77,35 65,47" fill="#f2a65e" stroke="#8c4a1f" stroke-width="2"/>`
+    + ball(45, 44)
+    + `<rect x="25" y="47" width="40" height="40" fill="#e07b39" stroke="#8c4a1f" stroke-width="2"/>`
+    + `<polygon points="65,47 77,35 77,75 65,87" fill="#c05f2a" stroke="#8c4a1f" stroke-width="2"/>`,
+    "IN", "在…里")
+  + fig(cube(25, 40) + ball(50, 34), "ON", "在…上")
+  + fig(cube(25, 5) + ball(45, 78), "UNDER", "在…下")
+  + fig(cube(8, 35) + ball(78, 75), "NEXT TO", "在…旁边")
+  + fig(ball(60, 33) + cube(18, 40), "BEHIND", "在…后面")
+  + fig(cube(30, 15) + ball(40, 78), "IN FRONT OF", "在…前面")
+  + fig(cube(0, 35) + cube(56, 35) + ball(54, 80), "BETWEEN", "在…之间", "0 0 110 100");
+
+const grammarMap = {
+  title: "英语语法",
+  sub: "English Grammar",
+  children: [
+    {
+      title: "主系表句型",
+      sub: "主语 + 系动词 + 表语",
+      color: "var(--branch1)",
+      children: [
+        {
+          title: "怎么判断",
+          color: "var(--branch2)",
+          children: [
+            {
+              title: "出现「是」字 → 主系表",
+              detail: `<p>「是」后面接<b>名词</b>，说明身份 / 类别。</p>
+                       <p class="rule">他是老师。→ <span class="en">He is a teacher.</span></p>`
+            },
+            {
+              title: "出现「很」字 → 主系表",
+              detail: `<p>「很」后面接<b>形容词</b>，说明性质 / 状态。</p>
+                       <p class="rule">她很漂亮。→ <span class="en">She is beautiful.</span></p>
+                       <p class="zh">注意：「很」不用直译，be + 形容词已表达状态。</p>`
+            },
+            {
+              title: "出现「在」字 → 主系表",
+              detail: `<p>「在」表示位置，表语是<b>介词短语</b>。</p>
+                       <p>英文表达：<span class="en">be + in / at / on + 地点</span></p>
+                       <p class="rule">他在教室里。→ <span class="en">He is in the classroom.</span></p>`
+            }
+          ]
+        },
+        {
+          title: "be 动词的规矩",
+          color: "var(--branch3)",
+          children: [
+            {
+              title: "我用 am",
+              detail: `<p class="rule"><span class="en">I am a student.</span> <span class="zh">我是学生。</span></p>`
+            },
+            {
+              title: "你用 are",
+              detail: `<p class="rule"><span class="en">You are my friend.</span> <span class="zh">你是我的朋友。</span></p>`
+            },
+            {
+              title: "他 / 她 / 它用 is",
+              detail: `<p class="rule"><span class="en">He is a teacher.</span> / <span class="en">She is happy.</span> / <span class="en">It is a cat.</span></p>`
+            },
+            {
+              title: "数量一个用 is，数量多个用 are",
+              detail: `<p class="rule">一个：<span class="en">This apple is red.</span> <span class="zh">这个苹果是红的。</span></p>
+                       <p class="rule">多个：<span class="en">These apples are red.</span> <span class="zh">这些苹果是红的。</span></p>
+                       <p class="rule">多个：<span class="en">We are classmates.</span> / <span class="en">They are teachers.</span></p>`
+            },
+            {
+              title: "为什么这么分？",
+              detail: `<p>be 动词是英语里<b>最不规则</b>的动词，am / is / are 来自不同的古老词根演变而来，没有统一规律，只能记忆搭配。</p>`
+            }
+          ]
+        },
+        {
+          title: "表语接什么",
+          color: "var(--branch4)",
+          children: [
+            {
+              title: "「是」+ 名词",
+              detail: `<p>说明身份、类别。</p>
+                       <p class="rule">他是老师。→ <span class="en">He is a teacher.</span></p>`
+            },
+            {
+              title: "「很」+ 形容词",
+              detail: `<p>说明性质、状态。</p>
+                       <p class="rule">她很漂亮。→ <span class="en">She is beautiful.</span></p>`
+            },
+            {
+              title: "「在」+ 介词短语（地点）",
+              detail: `<p>说明位置。</p>
+                       <p class="rule">他在教室里。→ <span class="en">He is in the classroom.</span></p>`
+            },
+            {
+              title: "位置表达公式",
+              detail: `<p>中文<b>方位词提前</b>变介词：</p>
+                       <p class="rule">屋里 = …里 + the + 屋 = <span class="en">in the room</span></p>
+                       <p class="rule">桌上 = …上 + the + 桌 = <span class="en">on the table</span></p>
+                       <p class="rule">桌下 = …下 + the + 桌 = <span class="en">under the table</span></p>
+                       <p class="rule">门前 = …前 + the + 门 = <span class="en">in front of the door</span></p>
+                       <p class="rule">屋后 = …后 + the + 屋 = <span class="en">behind the room</span></p>
+                       <p class="rule">桌旁 = …旁 + the + 桌 = <span class="en">beside the table</span><span class="zh">（= next to the table）</span></p>
+                       <p class="rule">学校附近 = …附近 + the + 学校 = <span class="en">near the school</span></p>
+                       <p class="rule">两楼之间 = …之间 + the + 楼 = <span class="en">between the buildings</span></p>
+                       <p class="rule">银行对面 = …对面 + the + 银行 = <span class="en">across from the bank</span><span class="zh">（= opposite the bank）</span></p>
+                       <p class="rule">屋外 = …外 + the + 屋 = <span class="en">outside the room</span></p>
+                       <p class="rule">墙上（挂着，接触墙面）= <span class="en">on the wall</span></p>
+                       <p class="rule">天上 / 空中 = <span class="en">in the sky</span></p>
+                       <p class="rule">车站（某个点）= <span class="en">at the station</span></p>`
+            },
+            {
+              title: "方位介词图解 🧊🟢",
+              detail: `<p>橙盒子和绿小球的位置关系：</p><div class="prep-grid">${prepFigures}</div>`
+            }
+          ]
+        }
+      ]
+    }
+    /* ▼ 以后新语法板块（如主谓宾、时态等）继续往这里加 ▼ */
+  ]
+};
+
+/* ================= 渲染引擎（不用改） ================= */
+function renderNode(data, level) {
+  const wrap = document.createElement("div");
+  wrap.className = "node-wrap";
+
+  const item = document.createElement("div");
+  item.className = "child-item";
+
+  const node = document.createElement("div");
+  node.className = "node" + (level === 0 ? " root" : level === 1 ? " level1" : " level2");
+  if (data.color && level >= 1) {
+    if (level === 1) { node.style.background = data.color; node.style.borderColor = data.color; }
+    else { node.style.borderColor = data.color; }
+  }
+  node.innerHTML = `<span>${data.title}</span>` + (data.sub ? `<span class="sub">${data.sub}</span>` : "");
+
+  if (data.detail) {
+    node.classList.add("leaf");
+    node.classList.remove("level2");
+    const d = document.createElement("div");
+    d.className = "detail";
+    d.innerHTML = data.detail;
+    node.appendChild(d);
+    node.addEventListener("click", e => { e.stopPropagation(); node.classList.toggle("open"); });
+  }
+
+  item.appendChild(node);
+
+  if (data.children && data.children.length) {
+    const kids = document.createElement("div");
+    kids.className = "children";
+    data.children.forEach(c => {
+      if (!c.color && data.color) c.color = data.color;
+      kids.appendChild(renderNode(c, level + 1));
+    });
+    const toggle = document.createElement("div");
+    toggle.className = "toggle";
+    toggle.textContent = "−";
+    node.appendChild(toggle);
+    node.addEventListener("click", e => {
+      if (data.detail) return;
+      e.stopPropagation();
+      item.classList.toggle("collapsed");
+      toggle.textContent = item.classList.contains("collapsed") ? "+" : "−";
+    });
+    item.appendChild(kids);
+  }
+
+  wrap.appendChild(item);
+  return wrap;
+}
+
+const canvas = document.getElementById("canvas");
+const tree = document.createElement("div");
+tree.className = "tree";
+tree.appendChild(renderNode(grammarMap, 0));
+canvas.appendChild(tree);
+
+/* ================= 拖动 & 缩放 ================= */
+const viewport = document.getElementById("viewport");
+let scale = 1, tx = 40, ty = 60, dragging = false, sx = 0, sy = 0;
+
+function apply() {
+  canvas.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+}
+function resetView() { scale = 1; tx = 40; ty = 60; apply(); }
+resetView();
+
+viewport.addEventListener("mousedown", e => {
+  dragging = true; sx = e.clientX - tx; sy = e.clientY - ty;
+  viewport.classList.add("dragging");
+});
+window.addEventListener("mousemove", e => {
+  if (!dragging) return;
+  tx = e.clientX - sx; ty = e.clientY - sy; apply();
+});
+window.addEventListener("mouseup", () => { dragging = false; viewport.classList.remove("dragging"); });
+
+viewport.addEventListener("wheel", e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 0.9;
+  const rect = viewport.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  tx = mx - (mx - tx) * factor;
+  ty = my - (my - ty) * factor;
+  scale = Math.min(2.5, Math.max(0.3, scale * factor));
+  apply();
+}, { passive: false });
+</script>
+</body>
+</html>
