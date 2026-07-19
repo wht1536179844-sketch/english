@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日世界 · 早报与人物志</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #f4f7fb; --main: #3b5bdb; --accent: #e8590c;
+    --text: #23324a; --line: #d0d9ea;
+  }
+  body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: var(--bg); color: var(--text); }
+  header {
+    background: #ffffffee; height: 56px; display: flex; align-items: center; gap: 14px;
+    padding: 0 20px; box-shadow: 0 1px 6px rgba(30,50,90,.08);
+    position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { font-size: 18px; color: var(--main); }
+  header .tip { font-size: 12px; color: #7b8aa5; }
+  header .links { margin-left: auto; display: flex; gap: 8px; }
+  header a {
+    font-size: 13px; color: var(--main); text-decoration: none;
+    border: 1px solid var(--line); padding: 6px 12px; border-radius: 8px; background: #fff;
+  }
+  header a:hover { background: #eef2ff; }
+
+  .wrap { max-width: 800px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  .datebar {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap;
+  }
+  .datebar .today { font-size: 24px; font-weight: bold; color: var(--main); }
+  .datebar .wd { font-size: 14px; color: #7b8aa5; }
+  .datebar select {
+    margin-left: auto; border: 1px solid var(--line); border-radius: 8px;
+    padding: 6px 10px; font-size: 13px; font-family: inherit; color: var(--text);
+    background: #fff; outline: none;
+  }
+
+  .card {
+    background: #fff; border-radius: 14px; padding: 20px;
+    box-shadow: 0 2px 10px rgba(30,50,90,.07); margin-bottom: 18px;
+  }
+  .cat-title {
+    font-size: 15px; font-weight: bold; color: var(--main);
+    border-left: 4px solid var(--main); padding-left: 10px; margin-bottom: 12px;
+  }
+  .news-item { padding: 10px 0; border-bottom: 1px dashed #e6ecf5; }
+  .news-item:last-child { border-bottom: none; }
+  .news-item .t { font-size: 15px; font-weight: bold; line-height: 1.5; }
+  .news-item .t a { color: var(--text); text-decoration: none; }
+  .news-item .t a:hover { color: var(--main); }
+  .news-item .s { font-size: 13.5px; color: #66788f; margin-top: 4px; line-height: 1.7; }
+
+  .figure-card { border-top: 4px solid var(--accent); }
+  .figure-card .f-tag {
+    display: inline-block; background: #fff0e6; color: var(--accent);
+    font-size: 12px; font-weight: bold; border-radius: 6px; padding: 3px 10px; margin-bottom: 10px;
+  }
+  .figure-card .f-name { font-size: 22px; font-weight: bold; }
+  .figure-card .f-title { font-size: 14px; color: #7b8aa5; margin: 4px 0 14px; }
+  .figure-card .f-story { font-size: 15px; line-height: 2; }
+  .figure-card .f-story p { margin-bottom: 12px; text-indent: 2em; }
+
+  footer { text-align: center; font-size: 12px; color: #98a6bb; padding: 20px 0 40px; }
+
+  /* 播客卡片 */
+  .pod-item { padding: 12px 0; border-bottom: 1px dashed #e6ecf5; }
+  .pod-item:last-child { border-bottom: none; }
+  .pod-item .p-show {
+    display: inline-block; background: #eef2ff; color: var(--main);
+    font-size: 12px; font-weight: bold; border-radius: 5px; padding: 2px 8px; margin-bottom: 4px;
+  }
+  .pod-item .p-title { font-size: 15px; font-weight: bold; line-height: 1.5; }
+  .pod-item .p-note { font-size: 13px; color: #66788f; margin: 4px 0 8px; line-height: 1.6; }
+  .pod-item audio { width: 100%; height: 36px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌍 每日世界</h1>
+  <span class="tip">早报 + 人物志 · 每天自动更新</span>
+  <div class="links">
+    <a href="英语语法大地图.html">🗺️ 语法大地图</a>
+    <a href="英语句子诊所.html">🏥 句子诊所</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="datebar">
+    <span class="today" id="dateText"></span>
+    <span class="wd" id="wdText"></span>
+    <select id="archiveSel" onchange="show(+this.value)"></select>
+  </div>
+  <div id="content"></div>
+</div>
+
+<footer>内容由 AI 每日自动生成 · 新闻摘要仅供参考，点击标题可查看原文</footer>
+
+<script src="早报数据.js"></script>
+<script src="人物志故事库.js"></script>
+<script>
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+/* 人物志按日期轮换：故事库固定，每天换一位 */
+function figureOfDate(dateStr) {
+  if (!window.FIGURE_LIBRARY || !FIGURE_LIBRARY.length) return null;
+  const dayIndex = Math.floor(new Date(dateStr + "T00:00:00").getTime() / 86400000);
+  return FIGURE_LIBRARY[((dayIndex % FIGURE_LIBRARY.length) + FIGURE_LIBRARY.length) % FIGURE_LIBRARY.length];
+}
+
+function show(idx) {
+  const d = DAILY_ARCHIVE[idx];
+  if (!d) return;
+  document.getElementById("dateText").textContent = d.date;
+  document.getElementById("wdText").textContent = d.weekday || "";
+  let html = "";
+
+  (d.news || []).forEach(sec => {
+    html += '<div class="card"><div class="cat-title">' + esc(sec.cat) + '</div>';
+    (sec.items || []).forEach(it => {
+      html += '<div class="news-item"><div class="t">' +
+        (it.link ? '<a href="' + esc(it.link) + '" target="_blank" rel="noopener">' + esc(it.t) + ' ↗</a>' : esc(it.t)) +
+        '</div>' + (it.s ? '<div class="s">' + esc(it.s) + '</div>' : '') + '</div>';
+    });
+    html += '</div>';
+  });
+
+  if (d.podcasts && d.podcasts.length) {
+    html += '<div class="card"><div class="cat-title">🎧 热门播客 · 最新一期</div>';
+    d.podcasts.forEach(p => {
+      html += '<div class="pod-item"><span class="p-show">' + esc(p.show) + '</span>' +
+        '<div class="p-title">' + (p.link ? '<a href="' + esc(p.link) + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">' + esc(p.title) + '</a>' : esc(p.title)) + '</div>' +
+        (p.note ? '<div class="p-note">' + esc(p.note) + '</div>' : '') +
+        (p.audio ? '<audio controls preload="none" src="' + esc(p.audio) + '"></audio>' : '') +
+        '</div>';
+    });
+    html += '</div>';
+  }
+
+  const fig = figureOfDate(d.date);
+  if (fig) {
+    html += '<div class="card figure-card"><span class="f-tag">📖 今日人物志（每日轮换）</span>' +
+      '<div class="f-name">' + esc(fig.name) + '</div>' +
+      '<div class="f-title">' + esc(fig.title || "") + '</div>' +
+      '<div class="f-story">' + (fig.story || "").split(/\n+/).map(p => '<p>' + esc(p) + '</p>').join("") + '</div></div>';
+  }
+
+  document.getElementById("content").innerHTML = html;
+}
+
+const sel = document.getElementById("archiveSel");
+DAILY_ARCHIVE.forEach((d, i) => {
+  const o = document.createElement("option");
+  o.value = i;
+  o.textContent = (i === 0 ? "最新一期 " : "往期 ") + d.date;
+  sel.appendChild(o);
+});
+show(0);
+</script>
+</body>
+</html>
