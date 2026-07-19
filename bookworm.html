@@ -90,6 +90,18 @@ td:first-child,th:first-child{text-align:left}
 #lookup .lk-zh{font-size:14px;line-height:1.7;margin-top:6px;color:var(--ink)}
 #lookup .lk-close{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--ink-soft);font-size:22px;line-height:1;width:38px;height:38px;border-radius:50%;cursor:pointer}
 #lookup .lk-close:hover{color:var(--red)}
+#lookup .lk-fav{background:none;border:1px solid var(--grid);border-radius:6px;padding:3px 10px;font-size:12.5px;color:var(--ink-soft);cursor:pointer}
+#lookup .lk-fav.on{border-color:var(--red);color:var(--red);background:var(--red-soft)}
+/* 生词收藏本 */
+.fav-tools{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.fav-row{display:flex;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px dashed var(--grid);font-size:14px;flex-wrap:wrap}
+.fav-row:last-child{border-bottom:none}
+.fav-en{font-family:var(--serif);font-size:18px;min-width:90px}
+.fav-ph{color:var(--ink-soft);font-size:12.5px;min-width:60px}
+.fav-zh{flex:1;min-width:160px;cursor:pointer;border-radius:6px;padding:1px 8px;line-height:1.6}
+.fav-zh.mask{color:transparent;background:repeating-linear-gradient(90deg,var(--grid),var(--grid) 10px,#e7efe3 10px,#e7efe3 20px);user-select:none}
+.fav-del{background:none;border:1px solid var(--grid);border-radius:6px;width:26px;height:26px;color:var(--ink-soft);cursor:pointer;flex:none}
+.fav-del:hover{border-color:var(--red);color:var(--red)}
 .spk{width:28px;height:28px;border-radius:50%;background:none;border:1px solid var(--grid);color:var(--ink-soft);font-size:13px;flex:none;cursor:pointer}
 .spk:hover,.spk.playing{border-color:var(--red);color:var(--red)}
 </style>
@@ -131,6 +143,15 @@ td:first-child,th:first-child{text-align:left}
 </section>
 
 <section class="panel">
+  <h2>生词收藏本（已收藏 <span id="favCount">0</span> 词）</h2>
+  <div class="fav-tools">
+    <button class="btn-ghost" id="btnFavMask">遮挡释义自测</button>
+    <button class="btn-ghost" id="btnFavClear">清空生词本</button>
+  </div>
+  <div id="favList"></div>
+</section>
+
+<section class="panel">
   <h2>三十章复习总表（艾宾浩斯）</h2>
   <div style="overflow-x:auto"><table id="matrix"></table></div>
   <div class="progress"><i id="pbar" style="width:0"></i></div>
@@ -150,6 +171,7 @@ td:first-child,th:first-child{text-align:left}
     <span class="lk-word" id="lkWord"></span>
     <span class="lk-ph" id="lkPh"></span>
     <button class="spk" id="lkSpk" title="播放读音">🔊</button>
+    <button class="lk-fav" id="lkFav" title="收藏到生词本">☆ 收藏</button>
     <span class="lk-base" id="lkBase"></span>
   </div>
   <div class="lk-zh" id="lkZh"></div>
@@ -186,27 +208,93 @@ if(window.speechSynthesis)speechSynthesis.onvoiceschanged=()=>{voiceCache=pickVo
 function speak(word,btn){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(word);u.lang="en-US";u.rate=.85;if(!voiceCache)voiceCache=pickVoice();if(voiceCache)u.voice=voiceCache;if(btn){btn.classList.add("playing");u.onend=u.onerror=()=>btn.classList.remove("playing")}speechSynthesis.speak(u);}catch(e){}}
 
 /* ===== 查词（离线）===== */
-let curWordEl=null;
+let curWordEl=null,curLkWord=null;
+function baseOf(w){
+  const hit=DICT[w];
+  if(!hit)return "";
+  let base=hit[0]?hit[0].toLowerCase():"";
+  if(!base){
+    const m=/([a-z]+)\s*的(过去式|过去分词|现在分词|第三人称|复数|比较级|最高级|所有格)/i.exec(hit[2]);
+    if(m)base=m[1].toLowerCase();
+  }
+  if(base===w||!DICT[base])return "";
+  return base;
+}
+function fullZh(w){
+  const hit=DICT[w];
+  if(!hit)return "词典未收录（多为人名、地名）";
+  let zh=hit[2];
+  const base=baseOf(w);
+  if(base&&DICT[base][2])zh+="　｜　"+base+"："+DICT[base][2];
+  return zh;
+}
 function lookup(word,el){
   const box=document.getElementById("lookup");
   const w=word.toLowerCase().replace(/’/g,"'");
   const hit=DICT[w];
+  curLkWord=w;
   document.getElementById("lkWord").textContent=word;
   if(hit){
-    document.getElementById("lkPh").textContent=hit[1]?"/"+hit[1]+"/":"";
-    document.getElementById("lkBase").textContent=hit[0]?"原形 "+hit[0]:"";
-    document.getElementById("lkZh").textContent=hit[2];
+    const bs=baseOf(w);
+    let ph=hit[1];
+    if(!ph&&bs&&DICT[bs])ph=DICT[bs][1];
+    document.getElementById("lkPh").textContent=ph?"/"+ph+"/":"";
+    document.getElementById("lkBase").textContent=bs?"原形 "+bs:"";
   }else{
     document.getElementById("lkPh").textContent="";
     document.getElementById("lkBase").textContent="";
-    document.getElementById("lkZh").textContent="词典未收录（多为人名、地名）";
   }
+  document.getElementById("lkZh").textContent=fullZh(w);
+  setFavBtn(!!getFavs()[w]);
   document.getElementById("lkSpk").onclick=()=>speak(word,document.getElementById("lkSpk"));
   box.classList.add("show");
   if(curWordEl)curWordEl.classList.remove("sel");
   curWordEl=el;if(el)el.classList.add("sel");
   speak(word,document.getElementById("lkSpk"));
 }
+
+/* ===== 生词收藏本 ===== */
+function getFavs(){try{return JSON.parse(localStorage.getItem("bw2_favs"))||{}}catch(e){return{}}}
+function setFavs(v){localStorage.setItem("bw2_favs",JSON.stringify(v))}
+let favMask=false;
+function setFavBtn(on){
+  const b=document.getElementById("lkFav");
+  b.textContent=on?"★ 已收藏":"☆ 收藏";
+  b.classList.toggle("on",on);
+}
+document.getElementById("lkFav").onclick=()=>{
+  if(!curLkWord)return;
+  const f=getFavs();
+  if(f[curLkWord])delete f[curLkWord];
+  else{
+    const hit=DICT[curLkWord];
+    let ph="";
+    if(hit){ph=hit[1]||"";const bs=baseOf(curLkWord);if(!ph&&bs&&DICT[bs])ph=DICT[bs][1]||"";}
+    f[curLkWord]={ph:ph,zh:fullZh(curLkWord)};
+  }
+  setFavs(f);setFavBtn(!!getFavs()[curLkWord]);renderFavs();
+};
+function renderFavs(){
+  const favs=getFavs();const keys=Object.keys(favs).sort();
+  document.getElementById("favCount").textContent=keys.length;
+  const box=document.getElementById("favList");
+  if(!keys.length){box.innerHTML='<div style="font-size:13px;color:var(--ink-soft)">还没有收藏。点课文里的单词，在弹出的查词卡上点「☆ 收藏」，生词会存进这里（本机保存）。</div>';return;}
+  box.innerHTML=keys.map(k=>{const f=favs[k];
+    return '<div class="fav-row"><span class="fav-en">'+esc(k)+'</span><span class="fav-ph">'+(f.ph?"/"+esc(f.ph)+"/":"")+'</span><button class="spk fav-spk" data-w="'+esc(k)+'" title="播放读音">🔊</button><span class="fav-zh'+(favMask?" mask":"")+'">'+esc(f.zh)+'</span><button class="fav-del" data-w="'+esc(k)+'" title="移出生词本">✕</button></div>';
+  }).join("");
+  box.querySelectorAll(".fav-spk").forEach(b=>b.onclick=()=>speak(b.dataset.w,b));
+  box.querySelectorAll(".fav-del").forEach(b=>b.onclick=()=>{const f=getFavs();delete f[b.dataset.w];setFavs(f);if(curLkWord===b.dataset.w)setFavBtn(false);renderFavs();});
+  box.querySelectorAll(".fav-zh").forEach(z=>z.onclick=()=>z.classList.toggle("mask"));
+}
+document.getElementById("btnFavMask").onclick=()=>{
+  favMask=!favMask;
+  document.getElementById("btnFavMask").textContent=favMask?"显示全部释义":"遮挡释义自测";
+  document.getElementById("btnFavMask").classList.toggle("on",favMask);
+  renderFavs();
+};
+document.getElementById("btnFavClear").onclick=()=>{
+  if(confirm("确定清空生词收藏本吗？此操作不可恢复。")){setFavs({});if(curLkWord)setFavBtn(false);renderFavs();}
+};
 document.querySelector("#lookup .lk-close").onclick=()=>{
   document.getElementById("lookup").classList.remove("show");
   if(curWordEl){curWordEl.classList.remove("sel");curWordEl=null}
@@ -317,6 +405,7 @@ btnPauseResume.onclick=()=>{
 };
 document.getElementById("btnReset").onclick=()=>{if(confirm("确定清空全部打卡记录，并把今天设为第 1 天吗？")){localStorage.removeItem("bw2_checks");store.start=toYMD(new Date());curTab=1;render();}};
 render();
+renderFavs();
 </script>
 </body>
 </html>
