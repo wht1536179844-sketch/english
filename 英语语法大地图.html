@@ -139,6 +139,12 @@
 
   .collapsed > .children { display: none; }
 
+  /* 左侧镜像分支：整体水平翻转，节点内容再翻回来 */
+  .mirror { transform: scaleX(-1); }
+  .mirror .node { transform: scaleX(-1); }
+  .mirror .node:hover { transform: scaleX(-1) translateY(-1px); }
+  .rootwrap > .child-item::before { display: none; }
+
   footer.hint {
     position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
     background: #ffffffcc; padding: 6px 18px; border-radius: 20px;
@@ -633,7 +639,25 @@ function renderNode(data, level) {
 const canvas = document.getElementById("canvas");
 const tree = document.createElement("div");
 tree.className = "tree";
-tree.appendChild(renderNode(grammarMap, 0));
+
+/* 一级分支左右分布：偶数序号放右边，奇数序号放左边 */
+const rightBranches = [], leftBranches = [];
+grammarMap.children.forEach((c, i) => (i % 2 === 0 ? rightBranches : leftBranches).push(c));
+
+const leftCol = document.createElement("div");
+leftCol.className = "children mirror";
+leftBranches.forEach(c => leftCol.appendChild(renderNode(c, 1)));
+
+const rootWrap = renderNode({ title: grammarMap.title, sub: grammarMap.sub }, 0);
+rootWrap.classList.add("rootwrap");
+
+const rightCol = document.createElement("div");
+rightCol.className = "children";
+rightBranches.forEach(c => rightCol.appendChild(renderNode(c, 1)));
+
+if (leftBranches.length) tree.appendChild(leftCol);
+tree.appendChild(rootWrap);
+tree.appendChild(rightCol);
 canvas.appendChild(tree);
 
 /* ================= 拖动 & 缩放 ================= */
@@ -643,7 +667,19 @@ let scale = 1, tx = 40, ty = 60, dragging = false, sx = 0, sy = 0;
 function apply() {
   canvas.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
 }
-function resetView() { scale = 1; tx = 40; ty = 60; apply(); }
+function resetView() {
+  scale = 1; tx = 0; ty = 0; apply();
+  const rootEl = document.querySelector(".rootwrap .node.root");
+  if (rootEl) {
+    const cr = canvas.getBoundingClientRect();
+    const rr = rootEl.getBoundingClientRect();
+    const cx = rr.left - cr.left + rr.width / 2;
+    const cy = rr.top - cr.top + rr.height / 2;
+    tx = viewport.clientWidth / 2 - cx;
+    ty = viewport.clientHeight / 2 - cy;
+  }
+  apply();
+}
 resetView();
 
 viewport.addEventListener("mousedown", e => {
