@@ -399,6 +399,45 @@ const grammarMap = {
           ]
         }
       ]
+    },
+    {
+      title: "there be 句型",
+      sub: "某处存在某物",
+      color: "var(--branch2)",
+      children: [
+        {
+          title: "怎么判断",
+          children: [
+            {
+              title: "句子里有「有」→ there be 句型",
+              detail: `<p>句子里出现"<b>有</b>"字，就是 there be 句型。</p>
+                       <p class="rule">教室里<b>有</b>一张桌子。→ <span class="en">There is a desk in the classroom.</span></p>`
+            },
+            {
+              title: "「有」= 存在，而非拥有",
+              detail: `<p>there be 的"有"表示"<b>存在</b>"而非"<b>拥有</b>"：</p>
+                       <p class="rule"><b>存在</b>（用 there be）：教室里有一张桌子。→ <span class="en">There is a desk in the classroom.</span></p>
+                       <p class="rule"><b>拥有</b>（用 have / has）：我有一张桌子。→ <span class="en">I have a desk.</span> <span class="zh">（"拥有"不用 there be）</span></p>`
+            }
+          ]
+        },
+        {
+          title: "使用规则",
+          children: [
+            {
+              title: "存在1个用 there is，多个用 there are",
+              detail: `<p>"存在"数量 <b>1 个</b>，用 <b>there is</b>；数量<b>多个</b>，用 <b>there are</b>。</p>
+                       <p class="rule"><span class="en">There <b>is</b> a book on the desk.</span> <span class="zh">桌上有一本书</span></p>
+                       <p class="rule"><span class="en">There <b>are</b> two books on the desk.</span> <span class="zh">桌上有两本书</span></p>`
+            },
+            {
+              title: "地点不需要时就不加",
+              detail: `<p>there be 后的地点，<b>不需要时就不加</b>。</p>
+                       <p class="rule"><span class="en">There are seven days in a week.</span> <span class="zh">一周有七天——不用加地点</span></p>`
+            }
+          ]
+        }
+      ]
     }
     /* ▼ 以后新语法板块（如时态等）继续往这里加 ▼ */
   ]
