@@ -101,6 +101,7 @@
 
 <script src="早报数据.js"></script>
 <script src="人物志故事库.js"></script>
+<script src="人物志播客单.js"></script>
 <script>
 function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
@@ -136,6 +137,16 @@ function show(idx) {
         (p.note ? '<div class="p-note">' + esc(p.note) + '</div>' : '') +
         (p.audio ? '<audio controls preload="none" src="' + esc(p.audio) + '"></audio>' : '') +
         '</div>';
+    });
+    html += '</div>';
+  }
+
+  if (window.FIGURE_PODCASTS && FIGURE_PODCASTS.length) {
+    html += '<div class="card figure-card"><span class="f-tag">🎧 人物志·精选播客单（固定10期，听完喊AI换一批）</span>';
+    FIGURE_PODCASTS.forEach((p, i) => {
+      html += '<div class="pod-item"><span class="p-show">' + esc(p.show) + (p.plays ? ' · ' + esc(p.plays) + '播放' : '') + '</span>' +
+        '<div class="p-title"><a href="' + esc(p.link) + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">' + (i+1) + '. ' + esc(p.title) + ' ↗</a></div>' +
+        '<div class="p-note">👤 ' + esc(p.guest) + '<br>💡 ' + esc(p.why) + '</div></div>';
     });
     html += '</div>';
   }
