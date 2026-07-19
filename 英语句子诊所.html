@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英语句子诊所</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #f4f7fb;
+    --main: #3b5bdb;
+    --err: #e03131;
+    --ok: #2f9e44;
+    --text: #23324a;
+    --line: #d0d9ea;
+  }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    background: #ffffffee; height: 56px;
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 20px; box-shadow: 0 1px 6px rgba(30,50,90,.08);
+    position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { font-size: 18px; color: var(--main); }
+  header .tip { font-size: 12px; color: #7b8aa5; }
+  header a {
+    margin-left: auto; font-size: 13px; color: var(--main);
+    text-decoration: none; border: 1px solid var(--line);
+    padding: 6px 14px; border-radius: 8px; background: #fff;
+  }
+  header a:hover { background: #eef2ff; }
+
+  .wrap { max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  .card {
+    background: #fff; border-radius: 14px; padding: 20px;
+    box-shadow: 0 2px 10px rgba(30,50,90,.07); margin-bottom: 18px;
+  }
+  .card h2 { font-size: 15px; margin-bottom: 12px; color: var(--main); }
+
+  textarea {
+    width: 100%; min-height: 90px; resize: vertical;
+    border: 2px solid var(--line); border-radius: 10px;
+    padding: 12px; font-size: 16px; font-family: inherit;
+    outline: none; transition: border-color .15s;
+  }
+  textarea:focus { border-color: var(--main); }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  button {
+    border: none; border-radius: 9px; padding: 10px 22px;
+    font-size: 14px; cursor: pointer; font-family: inherit;
+    transition: opacity .15s, transform .1s;
+  }
+  button:hover { opacity: .88; }
+  button:active { transform: scale(.97); }
+  .btn-main { background: var(--main); color: #fff; font-weight: bold; }
+  .btn-light { background: #eef2ff; color: var(--main); }
+  .btn-green { background: #e6f7eb; color: var(--ok); }
+  .btn-red-light { background: #fff0f0; color: var(--err); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+
+  .loading { color: #7b8aa5; font-size: 14px; padding: 8px 0; }
+  .loading::after { content: "…"; animation: dots 1.2s infinite; }
+  @keyframes dots { 0%{content:"…"} 33%{content:"·…"} 66%{content:"··…"} }
+
+  /* 结果区 */
+  .sentence-view {
+    font-size: 19px; line-height: 1.9; padding: 12px;
+    background: #f8fafd; border-radius: 10px; word-break: break-word;
+  }
+  .err-mark {
+    color: var(--err); font-weight: bold;
+    text-decoration: underline wavy var(--err) 2px;
+    text-underline-offset: 4px;
+    background: #ffe9e9; border-radius: 4px; padding: 0 2px;
+    cursor: pointer;
+  }
+  .trans {
+    font-size: 16px; color: #35507a; background: #f0f6ff;
+    border-radius: 10px; padding: 12px; margin-top: 10px;
+  }
+  .trans .lab { font-size: 12px; color: #7b8aa5; display: block; margin-bottom: 4px; }
+
+  .all-ok {
+    color: var(--ok); font-size: 16px; font-weight: bold;
+    background: #e6f7eb; border-radius: 10px; padding: 14px; margin-top: 12px;
+  }
+
+  .err-item {
+    border: 1px solid #ffd6d6; border-left: 5px solid var(--err);
+    border-radius: 10px; padding: 12px 14px; margin-top: 12px;
+    background: #fffafa;
+  }
+  .err-item .etype {
+    display: inline-block; font-size: 12px; font-weight: bold;
+    background: var(--err); color: #fff; border-radius: 5px;
+    padding: 2px 8px; margin-bottom: 6px;
+  }
+  .err-item .ewrong { color: var(--err); font-weight: bold; text-decoration: line-through; }
+  .err-item .emsg { font-size: 14px; margin: 6px 0; line-height: 1.6; }
+  .err-item .esug { font-size: 14px; }
+  .err-item .esug span {
+    display: inline-block; background: #e6f7eb; color: var(--ok);
+    font-weight: bold; border-radius: 6px; padding: 2px 10px;
+    margin: 2px 6px 2px 0; cursor: pointer; border: 1px solid #b7e4c3;
+  }
+  .err-item .esug span:hover { background: #d3f0dc; }
+
+  .fixed-view {
+    margin-top: 12px; padding: 12px; border-radius: 10px;
+    background: #e6f7eb; font-size: 17px; line-height: 1.8;
+  }
+  .fixed-view .lab { font-size: 12px; color: #4a8a5c; display: block; margin-bottom: 4px; }
+  .fixed-view b { color: var(--ok); }
+
+  /* 收藏区 */
+  .fav-item {
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; margin-top: 10px; background: #fcfdff;
+    font-size: 14px; line-height: 1.7;
+  }
+  .fav-item .f-orig { color: var(--err); }
+  .fav-item .f-fix { color: var(--ok); font-weight: bold; }
+  .fav-item .f-note { color: #66788f; font-size: 13px; }
+  .fav-item .f-del {
+    float: right; color: #aab6c8; cursor: pointer; font-size: 13px;
+    border: none; background: none; padding: 2px 6px;
+  }
+  .fav-item .f-del:hover { color: var(--err); }
+  .empty { color: #98a6bb; font-size: 14px; padding: 8px 0; }
+
+  .hint { font-size: 12px; color: #98a6bb; margin-top: 8px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏥 英语句子诊所</h1>
+  <span class="tip">输入句子 → 查语法 → 标红讲解 → 收藏错句</span>
+  <a href="英语语法大地图.html">🗺️ 去语法大地图</a>
+</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <h2>✍️ 输入你的英语句子</h2>
+    <textarea id="input" placeholder="例如：He like play basketball.&#10;按 Ctrl+Enter 也可以直接检查"></textarea>
+    <div class="btn-row">
+      <button class="btn-main" id="checkBtn" onclick="doCheck()">🔍 检查语法</button>
+      <button class="btn-light" onclick="clearAll()">清空</button>
+    </div>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <h2>📋 诊断结果</h2>
+    <div id="result"></div>
+  </div>
+
+  <div class="card">
+    <h2>⭐ 我的错句本（<span id="favCount">0</span>）</h2>
+    <div class="btn-row" style="margin-top:0;margin-bottom:6px">
+      <button class="btn-green" onclick="exportFavs('txt')">📄 导出 TXT</button>
+      <button class="btn-green" onclick="exportFavs('csv')">📊 导出 CSV（可用Excel打开）</button>
+      <button class="btn-red-light" onclick="clearFavs()">🗑️ 清空错句本</button>
+    </div>
+    <div id="favList"></div>
+    <p class="hint">错句保存在本浏览器中，换设备不共享；建议定期导出备份。</p>
+  </div>
+
+</div>
+
+<script>
+/* ============ 语法检查：LanguageTool 免费公开接口 ============ */
+async function checkGrammar(text) {
+  const params = new URLSearchParams({
+    text: text,
+    language: "en-US",
+    motherTongue: "zh-CN",
+    level: "picky"
+  });
+  const res = await fetch("https://api.languagetool.org/v2/check", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString()
+  });
+  if (!res.ok) throw new Error("语法接口返回 " + res.status);
+  return res.json();
+}
+
+/* ============ 翻译：MyMemory 免费接口，失败换备用 ============ */
+async function translate(text) {
+  try {
+    const r = await fetch("https://api.mymemory.translated.net/get?q="
+      + encodeURIComponent(text) + "&langpair=en|zh-CN");
+    const j = await r.json();
+    const t = j?.responseData?.translatedText;
+    if (t && !/QUERY LENGTH|INVALID/.test(t)) return t;
+    throw 0;
+  } catch (e) {
+    try {
+      const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q="
+        + encodeURIComponent(text));
+      const j = await r.json();
+      return j[0].map(x => x[0]).join("");
+    } catch (e2) { return null; }
+  }
+}
+
+/* ============ 错误类别 → 中文 ============ */
+const CAT_ZH = {
+  "TYPOS": "拼写错误", "GRAMMAR": "语法错误", "PUNCTUATION": "标点错误",
+  "CASING": "大小写错误", "REDUNDANCY": "重复啰嗦", "STYLE": "表达建议",
+  "COLLOCATIONS": "搭配错误", "CONFUSED_WORDS": "易混词误用",
+  "MISC": "其他问题", "SEMANTICS": "语义问题", "COMPOUNDING": "合成词问题"
+};
+/* 常见具体规则 → 用你学过的规矩解释 */
+const RULE_ZH = {
+  "MORFOLOGIK_RULE_EN_US": "单词拼写不对",
+  "UPPERCASE_SENTENCE_START": "句子开头第一个字母要大写",
+  "EN_A_VS_AN": "a / an 用错了：后面单词是元音音开头用 an，辅音开头用 a",
+  "HE_VERB_AGR": "主谓一致：他/她/它 或数量一个，动词要加S（三单）",
+  "NON3PRS_VERB": "主谓一致：主语不是三单，动词不用加S",
+  "MD_BASEFORM": "情态动词（can/must/should…）后面要接动词原形",
+  "DID_BASEFORM": "助动词 do/does/did 后面要接动词原形",
+  "BEEN_PART_AGREEMENT": "be 动词后面的动词形式不对",
+  "THE_SENT_END": "句尾多了多余的词",
+  "SENTENCE_WHITESPACE": "句子之间要有空格",
+  "COMMA_PARENTHESIS_WHITESPACE": "标点前后空格不对",
+  "DOUBLE_PUNCTUATION": "标点重复了",
+  "EN_UNPAIRED_BRACKETS": "括号/引号没有成对",
+  "TOO_TO": "too / to 用混了",
+  "ADVERB_WORD_ORDER": "副词的位置不对",
+  "MUCH_COUNTABLE": "much 只能修饰不可数名词，可数名词用 many",
+  "MANY_UNCOUNTABLE": "many 只能修饰可数名词，不可数名词用 much",
+  "AGREEMENT_SENT_START": "句首主语与动词不一致",
+  "PRP_VBG": "人称代词后动词形式不对",
+  "BE_VBP_IN": "be 动词和主语不匹配（我用am你用are他她它用is，多个用are）"
+};
+
+function zhCategory(match) {
+  const rid = match.rule?.id || "";
+  if (RULE_ZH[rid]) return { cat: CAT_ZH[match.rule?.category?.id] || "语法错误", zh: RULE_ZH[rid] };
+  const catId = match.rule?.category?.id || "MISC";
+  return { cat: CAT_ZH[catId] || (match.rule?.category?.name || "问题"), zh: null };
+}
+
+/* ============ 主流程 ============ */
+let lastCheck = null;
+
+async function doCheck() {
+  const text = document.getElementById("input").value.trim();
+  if (!text) { alert("请先输入英语句子"); return; }
+  const btn = document.getElementById("checkBtn");
+  btn.disabled = true;
+  const card = document.getElementById("resultCard");
+  const box = document.getElementById("result");
+  card.style.display = "block";
+  box.innerHTML = '<div class="loading">正在诊断中，请稍候</div>';
+
+  const [gRes, tRes] = await Promise.allSettled([checkGrammar(text), translate(text)]);
+  btn.disabled = false;
+
+  if (gRes.status === "rejected") {
+    box.innerHTML = '<div class="err-item"><div class="emsg">😥 语法检查接口暂时连不上（' +
+      gRes.reason + '）。<br>请检查网络后重试；若在国内网络环境，偶尔需要多试几次。</div></div>';
+    return;
+  }
+  const matches = gRes.value.matches || [];
+  const trans = tRes.status === "fulfilled" ? tRes.value : null;
+  lastCheck = { text, matches, trans };
+  render(text, matches, trans);
+}
+
+function render(text, matches, trans) {
+  const box = document.getElementById("result");
+  let html = "";
+
+  /* 原句标红 */
+  html += '<div class="sentence-view">' + highlight(text, matches) + '</div>';
+
+  /* 中文意思 */
+  if (trans) {
+    html += '<div class="trans"><span class="lab">🇨🇳 中文意思</span>' + esc(trans) + '</div>';
+  } else {
+    html += '<div class="trans"><span class="lab">🇨🇳 中文意思</span><i style="color:#98a6bb">翻译接口暂时连不上，稍后重试</i></div>';
+  }
+
+  if (matches.length === 0) {
+    html += '<div class="all-ok">✅ 没有发现语法错误，这个句子很棒！</div>';
+    box.innerHTML = html;
+    return;
+  }
+
+  /* 逐条错误 */
+  matches.forEach((m, i) => {
+    const bad = text.substr(m.offset, m.length);
+    const info = zhCategory(m);
+    html += '<div class="err-item">';
+    html += '<span class="etype">❌ ' + esc(info.cat) + '</span>';
+    html += '<div class="emsg">错误 ' + (i+1) + '：<span class="ewrong">' + esc(bad) + '</span><br>';
+    if (info.zh) html += '📖 ' + esc(info.zh) + '<br>';
+    html += '<span style="color:#66788f">' + esc(m.message) + '</span></div>';
+    const sugs = (m.replacements || []).slice(0, 3);
+    if (sugs.length) {
+      html += '<div class="esug">✏️ 改成：' +
+        sugs.map(s => '<span onclick="applyFix(' + i + ',\'' + escAttr(s.value) + '\')">' + esc(s.value) + '</span>').join("") +
+        '<span style="background:#eef2ff;color:#3b5bdb;border-color:#c8d4f5" onclick="applyFix(' + i + ',null)">忽略</span></div>';
+    }
+    html += '</div>';
+  });
+
+  /* 一键修正 + 收藏 */
+  html += '<div class="btn-row">';
+  html += '<button class="btn-main" onclick="fixAll()">🪄 一键全部修正</button>';
+  html += '<button class="btn-green" onclick="saveFav()">⭐ 收藏这个错句</button>';
+  html += '</div>';
+  html += '<div id="fixedBox"></div>';
+  box.innerHTML = html;
+}
+
+function highlight(text, matches) {
+  if (!matches.length) return esc(text);
+  let out = "", pos = 0;
+  const sorted = [...matches].sort((a,b) => a.offset - b.offset);
+  sorted.forEach(m => {
+    if (m.offset < pos) return;
+    out += esc(text.slice(pos, m.offset));
+    out += '<span class="err-mark" title="' + escAttr(m.message) + '">' + esc(text.substr(m.offset, m.length)) + '</span>';
+    pos = m.offset + m.length;
+  });
+  out += esc(text.slice(pos));
+  return out;
+}
+
+/* 应用单个建议：直接改输入框并重查 */
+function applyFix(i, val) {
+  if (!lastCheck) return;
+  const m = lastCheck.matches[i];
+  if (val === null) {
+    lastCheck.matches.splice(i, 1);
+    render(lastCheck.text, lastCheck.matches, lastCheck.trans);
+    return;
+  }
+  const t = lastCheck.text;
+  const fixed = t.slice(0, m.offset) + val + t.slice(m.offset + m.length);
+  document.getElementById("input").value = fixed;
+  doCheck();
+}
+
+function buildFixed() {
+  if (!lastCheck) return null;
+  let t = lastCheck.text;
+  const sorted = [...lastCheck.matches]
+    .filter(m => m.replacements && m.replacements.length)
+    .sort((a,b) => b.offset - a.offset);
+  if (!sorted.length) return null;
+  sorted.forEach(m => {
+    t = t.slice(0, m.offset) + m.replacements[0].value + t.slice(m.offset + m.length);
+  });
+  return t;
+}
+
+function fixAll() {
+  const fixed = buildFixed();
+  if (!fixed) { alert("没有可自动修正的建议"); return; }
+  const fb = document.getElementById("fixedBox");
+  fb.innerHTML = '<div class="fixed-view"><span class="lab">✅ 修正后的句子（点击可复制）</span><b style="cursor:pointer" onclick="copyText(this.innerText)">' + esc(fixed) + '</b></div>';
+}
+
+function copyText(t) {
+  navigator.clipboard?.writeText(t);
+}
+
+function clearAll() {
+  document.getElementById("input").value = "";
+  document.getElementById("resultCard").style.display = "none";
+  lastCheck = null;
+}
+
+/* ============ 错句本（localStorage） ============ */
+const FAV_KEY = "sentence_clinic_favs";
+function getFavs() { try { return JSON.parse(localStorage.getItem(FAV_KEY)) || []; } catch(e){ return []; } }
+function setFavs(v) { localStorage.setItem(FAV_KEY, JSON.stringify(v)); renderFavs(); }
+
+function saveFav() {
+  if (!lastCheck) return;
+  const favs = getFavs();
+  if (favs.some(f => f.orig === lastCheck.text)) { alert("这个句子已经在错句本里啦"); return; }
+  const notes = lastCheck.matches.map(m => {
+    const bad = lastCheck.text.substr(m.offset, m.length);
+    const info = zhCategory(m);
+    const sug = m.replacements?.[0]?.value || "";
+    return info.cat + "：" + bad + (sug ? " → " + sug : "");
+  });
+  favs.unshift({
+    orig: lastCheck.text,
+    fixed: buildFixed() || "",
+    trans: lastCheck.trans || "",
+    notes: notes,
+    time: new Date().toLocaleString("zh-CN")
+  });
+  setFavs(favs);
+}
+
+function delFav(i) { const favs = getFavs(); favs.splice(i, 1); setFavs(favs); }
+function clearFavs() {
+  if (!getFavs().length) return;
+  if (confirm("确定清空整个错句本吗？（建议先导出备份）")) setFavs([]);
+}
+
+function renderFavs() {
+  const favs = getFavs();
+  document.getElementById("favCount").textContent = favs.length;
+  const box = document.getElementById("favList");
+  if (!favs.length) { box.innerHTML = '<div class="empty">还没有收藏错句。检查出错误后点「⭐ 收藏这个错句」。</div>'; return; }
+  box.innerHTML = favs.map((f, i) =>
+    '<div class="fav-item">' +
+    '<button class="f-del" onclick="delFav(' + i + ')">删除</button>' +
+    '<div class="f-orig">✗ ' + esc(f.orig) + '</div>' +
+    (f.fixed ? '<div class="f-fix">✓ ' + esc(f.fixed) + '</div>' : '') +
+    (f.trans ? '<div class="f-note">🇨🇳 ' + esc(f.trans) + '</div>' : '') +
+    (f.notes?.length ? '<div class="f-note">📖 ' + f.notes.map(esc).join("；") + '</div>' : '') +
+    '<div class="f-note">🕐 ' + esc(f.time) + '</div>' +
+    '</div>'
+  ).join("");
+}
+
+/* ============ 导出 ============ */
+function exportFavs(fmt) {
+  const favs = getFavs();
+  if (!favs.length) { alert("错句本是空的"); return; }
+  let content, name, type;
+  if (fmt === "csv") {
+    const rows = [["错误句子","修正后","中文意思","错误笔记","收藏时间"]];
+    favs.forEach(f => rows.push([f.orig, f.fixed, f.trans, (f.notes||[]).join("；"), f.time]));
+    content = "﻿" + rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(",")).join("\r\n");
+    name = "我的错句本.csv"; type = "text/csv";
+  } else {
+    content = favs.map((f, i) =>
+      "【" + (i+1) + "】" + f.time + "\n" +
+      "错句：" + f.orig + "\n" +
+      (f.fixed ? "改正：" + f.fixed + "\n" : "") +
+      (f.trans ? "中文：" + f.trans + "\n" : "") +
+      ((f.notes||[]).length ? "笔记：" + f.notes.join("；") + "\n" : "")
+    ).join("\n" + "-".repeat(40) + "\n\n");
+    name = "我的错句本.txt"; type = "text/plain";
+  }
+  const blob = new Blob([content], { type: type + ";charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ============ 工具 ============ */
+function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function escAttr(s) { return esc(s).replace(/'/g,"&#39;").replace(/"/g,"&quot;"); }
+
+document.getElementById("input").addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) doCheck();
+});
+
+renderFavs();
+</script>
+</body>
+</html>
