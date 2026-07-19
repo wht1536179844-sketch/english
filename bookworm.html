@@ -102,6 +102,7 @@ td:first-child,th:first-child{text-align:left}
 .fav-zh.mask{color:transparent;background:repeating-linear-gradient(90deg,var(--grid),var(--grid) 10px,#e7efe3 10px,#e7efe3 20px);user-select:none}
 .fav-del{background:none;border:1px solid var(--grid);border-radius:6px;width:26px;height:26px;color:var(--ink-soft);cursor:pointer;flex:none}
 .fav-del:hover{border-color:var(--red);color:var(--red)}
+.fav-src{width:100%;font-size:11.5px;color:var(--ink-soft);padding-left:2px;margin-top:-2px}
 .spk{width:28px;height:28px;border-radius:50%;background:none;border:1px solid var(--grid);color:var(--ink-soft);font-size:13px;flex:none;cursor:pointer}
 .spk:hover,.spk.playing{border-color:var(--red);color:var(--red)}
 </style>
@@ -124,6 +125,15 @@ td:first-child,th:first-child{text-align:left}
   <div id="todayTasks"></div>
 </section>
 
+<section class="panel">
+  <h2>生词收藏本（已收藏 <span id="favCount">0</span> 词）</h2>
+  <div class="fav-tools">
+    <button class="btn-ghost" id="btnFavMask">遮挡释义自测</button>
+    <button class="btn-ghost" id="btnFavClear">清空生词本</button>
+  </div>
+  <div id="favList"></div>
+</section>
+
 <nav class="tabs" id="tabs"></nav>
 
 <section class="board">
@@ -140,15 +150,6 @@ td:first-child,th:first-child{text-align:left}
     <button class="btn-ghost" id="btnPrev">← 上一章</button>
     <button class="btn-ghost" id="btnNext">下一章 →</button>
   </div>
-</section>
-
-<section class="panel">
-  <h2>生词收藏本（已收藏 <span id="favCount">0</span> 词）</h2>
-  <div class="fav-tools">
-    <button class="btn-ghost" id="btnFavMask">遮挡释义自测</button>
-    <button class="btn-ghost" id="btnFavClear">清空生词本</button>
-  </div>
-  <div id="favList"></div>
 </section>
 
 <section class="panel">
@@ -270,7 +271,8 @@ document.getElementById("lkFav").onclick=()=>{
     const hit=DICT[curLkWord];
     let ph="";
     if(hit){ph=hit[1]||"";const bs=baseOf(curLkWord);if(!ph&&bs&&DICT[bs])ph=DICT[bs][1]||"";}
-    f[curLkWord]={ph:ph,zh:fullZh(curLkWord)};
+    const st=STORIES[PLAN[curTab-1][0]];
+    f[curLkWord]={ph:ph,zh:fullZh(curLkWord),src:st.zh.split(" · ").slice(0,2).join(" · ")};
   }
   setFavs(f);setFavBtn(!!getFavs()[curLkWord]);renderFavs();
 };
@@ -280,7 +282,7 @@ function renderFavs(){
   const box=document.getElementById("favList");
   if(!keys.length){box.innerHTML='<div style="font-size:13px;color:var(--ink-soft)">还没有收藏。点课文里的单词，在弹出的查词卡上点「☆ 收藏」，生词会存进这里（本机保存）。</div>';return;}
   box.innerHTML=keys.map(k=>{const f=favs[k];
-    return '<div class="fav-row"><span class="fav-en">'+esc(k)+'</span><span class="fav-ph">'+(f.ph?"/"+esc(f.ph)+"/":"")+'</span><button class="spk fav-spk" data-w="'+esc(k)+'" title="播放读音">🔊</button><span class="fav-zh'+(favMask?" mask":"")+'">'+esc(f.zh)+'</span><button class="fav-del" data-w="'+esc(k)+'" title="移出生词本">✕</button></div>';
+    return '<div class="fav-row"><span class="fav-en">'+esc(k)+'</span><span class="fav-ph">'+(f.ph?"/"+esc(f.ph)+"/":"")+'</span><button class="spk fav-spk" data-w="'+esc(k)+'" title="播放读音">🔊</button><span class="fav-zh'+(favMask?" mask":"")+'">'+esc(f.zh)+'</span><button class="fav-del" data-w="'+esc(k)+'" title="移出生词本">✕</button>'+(f.src?'<span class="fav-src">出自《'+esc(f.src.replace(" · ","》"))+'</span>':'')+'</div>';
   }).join("");
   box.querySelectorAll(".fav-spk").forEach(b=>b.onclick=()=>speak(b.dataset.w,b));
   box.querySelectorAll(".fav-del").forEach(b=>b.onclick=()=>{const f=getFavs();delete f[b.dataset.w];setFavs(f);if(curLkWord===b.dataset.w)setFavBtn(false);renderFavs();});
