@@ -21,3 +21,24 @@
    How beautiful!（真漂亮！）
    What a beautiful girl!（多漂亮的姑娘！）
 记法：形副用 how，名词用 what，剩下照抄不动；有语境后半截可省。
+
+补充：感叹句三步变化法（变化规则详版）
+从陈述句变感叹句，三步：
+① 找：找出要感叹的成分（漂亮？快？一个好姑娘？）
+② 判：形容词/副词 → 用 how；名词（连同修饰词、冠词整体）→ 用 what
+③ 搬：how/what + 感叹成分 整体提到句首，剩余成分按原顺序照抄，不倒装
+
+how（只带走一个形/副词）：
+  She is beautiful. → How beautiful she is!
+  The movie is interesting. → How interesting the movie is!
+  He runs fast. → How fast he runs!
+  ⚠️ 剩余部分陈述语序：✗ How beautiful is she!
+
+what（名词整体搬走，分三种）：
+  ① 单数可数：what + a/an + 形 + 名 → What a beautiful girl she is! / What an interesting book it is!
+  ② 复数：what + 形 + 名复数（无 a/an）→ What beautiful flowers they are!
+  ③ 不可数：what + 形 + 名（无 a/an）→ What fine weather it is!
+  ⚠️ 易错：✗ What a fine weather! ✓ What fine weather!
+
+同义互换：How beautiful the girl is! = What a beautiful girl (she is)!
+（how 感叹"漂亮"，what 感叹"漂亮姑娘"）

@@ -15,6 +15,7 @@
     --branch3: #e8590c;
     --branch4: #9c36b5;
     --branch5: #c92a2a;
+    --branch6: #0b7285;
     --card-bg: #ffffff;
     --text: #23324a;
   }
@@ -22,114 +23,65 @@
     font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
     background: var(--bg);
     color: var(--text);
-    overflow: hidden;
-    height: 100vh;
+    line-height: 1.6;
   }
-
-  /* 顶栏 */
+  /* 顶栏（吸顶） */
   header {
-    position: fixed; top: 0; left: 0; right: 0; height: 56px;
+    position: sticky; top: 0; z-index: 100;
     background: #ffffffee; backdrop-filter: blur(6px);
-    display: flex; align-items: center; gap: 16px;
-    padding: 0 20px; z-index: 100;
     box-shadow: 0 1px 6px rgba(30,50,90,.08);
+    padding: 10px 16px 8px;
   }
+  .hrow { display: flex; align-items: center; gap: 14px; max-width: 960px; margin: 0 auto; }
   header h1 { font-size: 18px; color: var(--root-color); }
   header .tip { font-size: 12px; color: #7b8aa5; }
-  header button {
-    margin-left: auto; border: 1px solid #d0d9ea; background: #fff;
-    border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer;
-    color: #3b5bdb;
-  }
-  header button:hover { background: #eef2ff; }
   header a.clinic {
-    border: 1px solid #d0d9ea; background: #fff; border-radius: 8px;
-    padding: 6px 14px; font-size: 13px; color: #e03131; text-decoration: none;
+    margin-left: auto; border: 1px solid #d0d9ea; background: #fff; border-radius: 8px;
+    padding: 5px 12px; font-size: 13px; color: #e03131; text-decoration: none; white-space: nowrap;
   }
   header a.clinic:hover { background: #fff0f0; }
+  /* 目录条 */
+  nav#toc { max-width: 960px; margin: 8px auto 0; display: flex; gap: 8px; flex-wrap: wrap; }
+  nav#toc a {
+    font-size: 13px; text-decoration: none; padding: 4px 12px; border-radius: 999px;
+    background: #eef2fb; color: #3b5bdb; border: 1px solid #dbe4f5; white-space: nowrap;
+  }
+  nav#toc a:hover { background: #dfe8fa; }
 
-  /* 画布：可拖动 */
-  #viewport {
-    position: absolute; inset: 0; top: 56px;
-    cursor: grab; overflow: hidden;
-  }
-  #viewport.dragging { cursor: grabbing; }
-  #canvas {
-    position: absolute; left: 0; top: 0;
-    transform-origin: 0 0;
-    min-width: 2000px; min-height: 1400px;
-    padding: 60px;
-  }
+  main { max-width: 960px; margin: 0 auto; padding: 20px 16px 80px; }
 
-  /* 思维导图树形布局 */
-  .tree { display: flex; align-items: center; }
-  .node-wrap { display: flex; align-items: center; }
-  .children {
-    display: flex; flex-direction: column; gap: 14px;
-    margin-left: 46px; position: relative;
+  /* 一级板块 */
+  section.branch {
+    background: var(--card-bg); border-radius: 14px; margin-bottom: 26px;
+    box-shadow: 0 2px 10px rgba(30,50,90,.07); overflow: hidden;
+    border-top: 5px solid var(--c, var(--branch1));
+    scroll-margin-top: 110px;
   }
-  .child-item { display: flex; align-items: center; position: relative; }
-  /* 连接线 */
-  .child-item::before {
-    content: ""; position: absolute; left: -46px; top: 50%;
-    width: 46px; height: 2px; background: var(--line);
-  }
-  .children::before {
-    content: ""; position: absolute; left: -46px; top: 0; bottom: 0;
-    width: 2px; background: transparent;
-  }
-  /* 垂直干线 */
-  .children .child-item:not(:only-child)::after {
-    content: ""; position: absolute; left: -46px; width: 2px; background: var(--line);
-  }
-  .children .child-item:first-child:not(:only-child)::after { top: 50%; bottom: -7px; }
-  .children .child-item:last-child:not(:only-child)::after { top: -7px; bottom: 50%; }
-  .children .child-item:not(:first-child):not(:last-child)::after { top: -7px; bottom: -7px; }
+  .bhead { padding: 16px 22px 4px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .bhead h2 { font-size: 21px; color: var(--c, var(--branch1)); }
+  .bhead .bsub { font-size: 13px; color: #7b8aa5; }
+  .binner { padding: 8px 22px 20px; }
 
-  /* 节点样式 */
-  .node {
-    background: var(--card-bg);
-    border: 2px solid var(--line);
-    border-radius: 12px;
-    padding: 10px 16px;
-    font-size: 14px;
-    line-height: 1.5;
-    box-shadow: 0 2px 8px rgba(30,50,90,.07);
-    cursor: pointer;
-    user-select: none;
-    white-space: nowrap;
-    transition: box-shadow .15s, transform .15s;
-    position: relative;
+  /* 二级分组 */
+  .group { margin: 16px 0 6px; }
+  .group > h3 {
+    font-size: 16px; margin-bottom: 10px; color: var(--text);
+    padding-left: 10px; border-left: 4px solid var(--c, var(--branch1));
   }
-  .node:hover { box-shadow: 0 4px 14px rgba(30,50,90,.16); transform: translateY(-1px); }
+  .group .gsub { font-size: 12px; color: #7b8aa5; font-weight: normal; }
+  .group .group > h3 { font-size: 14.5px; border-left-width: 3px; opacity: .9; }
 
-  .node.root {
-    background: var(--root-color); color: #fff; border-color: var(--root-color);
-    font-size: 22px; font-weight: bold; padding: 18px 30px; border-radius: 16px;
+  /* 知识卡（平铺，详情直接展示） */
+  .card {
+    background: #fbfcfe; border: 1px solid #e3eaf5; border-radius: 10px;
+    padding: 12px 16px; margin: 10px 0;
   }
-  .node.level1 { font-size: 17px; font-weight: bold; padding: 13px 22px; color: #fff; }
-  .node.level2 { font-weight: bold; }
-
-  .node .sub { display: block; font-size: 12px; font-weight: normal; opacity: .75; margin-top: 2px; white-space: nowrap; }
-
-  /* 展开/收起小圆点 */
-  .toggle {
-    position: absolute; right: -13px; top: 50%; transform: translateY(-50%);
-    width: 20px; height: 20px; border-radius: 50%;
-    background: #fff; border: 2px solid var(--line);
-    font-size: 12px; line-height: 16px; text-align: center; color: #5c7099;
-    z-index: 2;
-  }
-
-  /* 详情卡片（叶子知识点） */
-  .node.leaf { white-space: normal; max-width: 380px; cursor: default; }
-  .node.leaf .detail { font-size: 13px; color: #51627e; margin-top: 6px; display: none; }
-  .node.leaf.open .detail { display: block; }
-  .node.leaf { cursor: pointer; }
-  .node.leaf .detail .en { color: #1971c2; font-weight: bold; }
-  .node.leaf .detail .zh { color: #868e96; }
-  .node.leaf .detail p { margin: 4px 0; }
-  .node.leaf .detail .rule { background: #f1f5fb; border-radius: 6px; padding: 6px 8px; margin: 6px 0; }
+  .card .ctitle { font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+  .card .detail { font-size: 13.5px; color: #51627e; }
+  .card .detail p { margin: 5px 0; }
+  .card .detail .en { color: #1971c2; font-weight: bold; }
+  .card .detail .zh { color: #868e96; }
+  .card .detail .rule { background: #f1f5fb; border-radius: 6px; padding: 7px 10px; margin: 7px 0; }
 
   /* 方位介词图解 */
   .prep-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
@@ -137,47 +89,33 @@
   .prep-grid figcaption { font-size: 12px; font-weight: bold; color: #1971c2; line-height: 1.3; }
   .prep-grid figcaption .cn { color: #868e96; font-weight: normal; font-size: 11px; }
 
-  .collapsed > .children { display: none; }
-
-  /* 左侧镜像分支：整体水平翻转，节点内容再翻回来 */
-  .mirror { transform: scaleX(-1); }
-  .mirror .node { transform: scaleX(-1); }
-  .mirror .node:hover { transform: scaleX(-1) translateY(-1px); }
-  .rootwrap > .child-item::before { display: none; }
-
-  footer.hint {
-    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
-    background: #ffffffcc; padding: 6px 18px; border-radius: 20px;
-    font-size: 12px; color: #7b8aa5; z-index: 100;
-    box-shadow: 0 1px 6px rgba(30,50,90,.08);
+  /* 回到顶部 */
+  #backtop {
+    position: fixed; right: 18px; bottom: 24px; width: 42px; height: 42px; border-radius: 50%;
+    border: 1px solid #d0d9ea; background: #fff; color: #3b5bdb; font-size: 18px; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(30,50,90,.15); display: none;
+  }
+  @media (max-width: 640px) {
+    .prep-grid { grid-template-columns: repeat(2, 1fr); }
+    .bhead h2 { font-size: 18px; }
   }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🗺️ 英语语法大地图</h1>
-  <span class="tip">持续补充中 · 当前板块：主系表</span>
-  <button onclick="resetView()">回到中心</button>
-  <a class="clinic" href="英语句子诊所.html">🏥 句子诊所</a>
+  <div class="hrow">
+    <h1>🗺️ 英语语法大地图</h1>
+    <span class="tip">平铺版 · 点目录直达板块</span>
+    <a class="clinic" href="英语句子诊所.html">🏥 句子诊所</a>
+  </div>
+  <nav id="toc"></nav>
 </header>
 
-<div id="viewport">
-  <div id="canvas"></div>
-</div>
-
-<footer class="hint">拖动空白处移动地图 · 滚轮缩放 · 点节点展开/收起 · 点知识卡查看详情</footer>
+<main id="content"></main>
+<button id="backtop" title="回到顶部">↑</button>
 
 <script>
-/* ================================================================
-   数据区：以后补充新语法知识，只需要往这个对象里加节点即可。
-   节点字段说明：
-   - title  : 节点标题
-   - sub    : 副标题（小字，可省略）
-   - color  : 分支主题色（只在一级分支设置，可省略）
-   - detail : 详情内容（HTML，叶子知识卡点击展开，可省略）
-   - children : 子节点数组（可省略）
-   ================================================================ */
 /* --- 方位图解绘图小工具（橙盒子 + 绿小球）--- */
 function cube(x, y) {
   return `<rect x="${x}" y="${y+12}" width="40" height="40" fill="#e07b39" stroke="#8c4a1f" stroke-width="2"/>`
@@ -635,13 +573,41 @@ const grammarMap = {
                    <p>💡 先判断句型，再按对应方法加否定——和「句型总纲」一脉相承。</p>`
         },
         {
-          title: "什么是感叹句",
-          detail: `<p>表示"<b>啊、哇、哟、太…、真…</b>"等含义的句子就是<b>感叹句</b>。</p>
-                   <p class="rule">感叹的成分是<b>形容词、副词</b> → 前面加 <span class="en"><b>how</b></span>，剩余句子成分<b>照抄</b>：<br>
-                   <span class="en"><b>How</b> beautiful she is!</span> <span class="zh">她真漂亮啊！</span></p>
-                   <p class="rule">感叹的成分是<b>名词</b> → 前面加 <span class="en"><b>what</b></span>，剩余句子成分<b>照抄</b>：<br>
-                   <span class="en"><b>What</b> a beautiful girl she is!</span> <span class="zh">她真是个漂亮姑娘啊！</span></p>
-                   <p>💡 记法：<b>形副用 how，名词用 what，剩下照抄不动</b>。</p>`
+          title: "什么是感叹句 · 三步变化法",
+          detail: `<p>表示"<b>啊、哇、哟、太…、真…</b>"等含义的句子就是<b>感叹句</b>。感叹句不是新句子，是<b>从陈述句变过来的</b>，就三步：</p>
+                   <p class="rule">① <b>找</b>：找出你要感叹的成分（漂亮？快？一个好姑娘？）<br>
+                   ② <b>判</b>：看它的词性——<b>形容词 / 副词 → 用 how</b>；<b>名词（连同修饰它的词）→ 用 what</b><br>
+                   ③ <b>搬</b>：把「how / what + 感叹成分」整体<b>提到句首</b>，剩余成分<b>按原顺序照抄，不倒装</b></p>
+                   <p class="rule">演示（感叹形容词）：<span class="en">She is <b>beautiful</b>.</span><br>
+                   → 感叹 beautiful（形容词）→ 用 how → 提前 →<br>
+                   <span class="en"><b>How beautiful</b> she is!</span> <span class="zh">她真漂亮啊！（she is 原样照抄在后面）</span></p>
+                   <p class="rule">演示（感叹名词）：<span class="en">She is <b>a beautiful girl</b>.</span><br>
+                   → 感叹 a beautiful girl（名词整体）→ 用 what → 提前 →<br>
+                   <span class="en"><b>What a beautiful girl</b> she is!</span> <span class="zh">她真是个漂亮姑娘啊！</span></p>
+                   <p>⚠️ 剩余部分是<b>陈述语序</b>：✓ <span class="en">How beautiful she is!</span>　✗ <span class="en">How beautiful is she!</span></p>`
+        },
+        {
+          title: "how 的用法：感叹形容词 / 副词",
+          detail: `<p><span class="en"><b>How</b></span> 后面直接跟<b>形容词</b>或<b>副词</b>（单独一个词，不带名词）：</p>
+                   <p class="rule"><b>how + 形容词</b>（原句是主系表）：<br>
+                   <span class="en">She is <b>beautiful</b>.</span> → <span class="en"><b>How beautiful</b> she is!</span> <span class="zh">她真漂亮！</span><br>
+                   <span class="en">The movie is <b>interesting</b>.</span> → <span class="en"><b>How interesting</b> the movie is!</span> <span class="zh">这电影真有意思！</span></p>
+                   <p class="rule"><b>how + 副词</b>（原句是主谓宾/主谓）：<br>
+                   <span class="en">He runs <b>fast</b>.</span> → <span class="en"><b>How fast</b> he runs!</span> <span class="zh">他跑得真快！</span></p>
+                   <p>💡 how 只带走那<b>一个</b>形容词/副词，句子其他部分原地照抄。</p>`
+        },
+        {
+          title: "what 的用法：感叹名词（三种情况）",
+          detail: `<p><span class="en"><b>What</b></span> 感叹的是<b>名词整体</b>（名词 + 修饰它的形容词、冠词一起搬走）。按名词分三种：</p>
+                   <p class="rule">① <b>单数可数名词</b>：what + <b>a / an</b> + 形容词 + 名词<br>
+                   <span class="en"><b>What a</b> beautiful girl she is!</span> <span class="zh">真是个漂亮姑娘！</span><br>
+                   <span class="en"><b>What an</b> interesting book it is!</span> <span class="zh">真是本有趣的书！</span></p>
+                   <p class="rule">② <b>复数名词</b>：what + 形容词 + 名词复数（<b>没有 a/an</b>）<br>
+                   <span class="en"><b>What</b> beautiful flowers they are!</span> <span class="zh">多漂亮的花啊！</span></p>
+                   <p class="rule">③ <b>不可数名词</b>：what + 形容词 + 名词（<b>没有 a/an</b>）<br>
+                   <span class="en"><b>What</b> fine weather it is!</span> <span class="zh">天气真好啊！</span></p>
+                   <p>⚠️ 易错：weather 不可数 → ✗ <span class="en">What a fine weather!</span>　✓ <span class="en">What fine weather!</span></p>
+                   <p>💡 同一个意思两种说法：<span class="en"><b>How</b> beautiful the girl is! = <b>What</b> a beautiful girl!</span>——how 感叹"漂亮"，what 感叹"漂亮姑娘"。</p>`
         },
         {
           title: "有语境时可以省略",
@@ -656,124 +622,57 @@ const grammarMap = {
   ]
 };
 
-/* ================= 渲染引擎（不用改） ================= */
-function renderNode(data, level) {
-  const wrap = document.createElement("div");
-  wrap.className = "node-wrap";
+/* ================= 平铺渲染 ================= */
+const BRANCH_COLORS = ["var(--branch1)","var(--branch2)","var(--branch3)","var(--branch4)","var(--branch5)","var(--branch6)"];
+const contentEl = document.getElementById("content");
+const tocEl = document.getElementById("toc");
 
-  const item = document.createElement("div");
-  item.className = "child-item";
-
-  const node = document.createElement("div");
-  node.className = "node" + (level === 0 ? " root" : level === 1 ? " level1" : " level2");
-  if (data.color && level >= 1) {
-    if (level === 1) { node.style.background = data.color; node.style.borderColor = data.color; }
-    else { node.style.borderColor = data.color; }
-  }
-  node.innerHTML = `<span>${data.title}</span>` + (data.sub ? `<span class="sub">${data.sub}</span>` : "");
-
-  if (data.detail) {
-    node.classList.add("leaf");
-    node.classList.remove("level2");
-    const d = document.createElement("div");
-    d.className = "detail";
-    d.innerHTML = data.detail;
-    node.appendChild(d);
-    node.addEventListener("click", e => { e.stopPropagation(); node.classList.toggle("open"); });
-  }
-
-  item.appendChild(node);
-
-  if (data.children && data.children.length) {
-    const kids = document.createElement("div");
-    kids.className = "children";
-    data.children.forEach(c => {
-      if (!c.color && data.color) c.color = data.color;
-      kids.appendChild(renderNode(c, level + 1));
-    });
-    const toggle = document.createElement("div");
-    toggle.className = "toggle";
-    toggle.textContent = "−";
-    node.appendChild(toggle);
-    node.addEventListener("click", e => {
-      if (data.detail) return;
-      e.stopPropagation();
-      item.classList.toggle("collapsed");
-      toggle.textContent = item.classList.contains("collapsed") ? "+" : "−";
-    });
-    item.appendChild(kids);
-  }
-
-  wrap.appendChild(item);
-  return wrap;
+function renderChildren(kids, parent) {
+  kids.forEach(k => {
+    if (k.children && k.children.length) {
+      const g = document.createElement("div");
+      g.className = "group";
+      g.innerHTML = "<h3>" + k.title + (k.sub ? ' <span class="gsub">' + k.sub + "</span>" : "") + "</h3>";
+      if (k.detail) {
+        const c = document.createElement("div");
+        c.className = "card";
+        c.innerHTML = '<div class="detail">' + k.detail + "</div>";
+        g.appendChild(c);
+      }
+      renderChildren(k.children, g);
+      parent.appendChild(g);
+    } else {
+      const c = document.createElement("div");
+      c.className = "card";
+      c.innerHTML = '<div class="ctitle">' + k.title + "</div>" + (k.detail ? '<div class="detail">' + k.detail + "</div>" : "");
+      parent.appendChild(c);
+    }
+  });
 }
 
-const canvas = document.getElementById("canvas");
-const tree = document.createElement("div");
-tree.className = "tree";
+(grammarMap.children || []).forEach((branch, i) => {
+  const color = BRANCH_COLORS[i % BRANCH_COLORS.length];
+  const a = document.createElement("a");
+  a.href = "#sec" + i;
+  a.textContent = branch.title;
+  tocEl.appendChild(a);
 
-/* 一级分支左右分布：偶数序号放右边，奇数序号放左边 */
-const rightBranches = [], leftBranches = [];
-grammarMap.children.forEach((c, i) => (i % 2 === 0 ? rightBranches : leftBranches).push(c));
-
-const leftCol = document.createElement("div");
-leftCol.className = "children mirror";
-leftBranches.forEach(c => leftCol.appendChild(renderNode(c, 1)));
-
-const rootWrap = renderNode({ title: grammarMap.title, sub: grammarMap.sub }, 0);
-rootWrap.classList.add("rootwrap");
-
-const rightCol = document.createElement("div");
-rightCol.className = "children";
-rightBranches.forEach(c => rightCol.appendChild(renderNode(c, 1)));
-
-if (leftBranches.length) tree.appendChild(leftCol);
-tree.appendChild(rootWrap);
-tree.appendChild(rightCol);
-canvas.appendChild(tree);
-
-/* ================= 拖动 & 缩放 ================= */
-const viewport = document.getElementById("viewport");
-let scale = 1, tx = 40, ty = 60, dragging = false, sx = 0, sy = 0;
-
-function apply() {
-  canvas.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
-}
-function resetView() {
-  scale = 1; tx = 0; ty = 0; apply();
-  const rootEl = document.querySelector(".rootwrap .node.root");
-  if (rootEl) {
-    const cr = canvas.getBoundingClientRect();
-    const rr = rootEl.getBoundingClientRect();
-    const cx = rr.left - cr.left + rr.width / 2;
-    const cy = rr.top - cr.top + rr.height / 2;
-    tx = viewport.clientWidth / 2 - cx;
-    ty = viewport.clientHeight / 2 - cy;
-  }
-  apply();
-}
-resetView();
-
-viewport.addEventListener("mousedown", e => {
-  dragging = true; sx = e.clientX - tx; sy = e.clientY - ty;
-  viewport.classList.add("dragging");
+  const sec = document.createElement("section");
+  sec.className = "branch";
+  sec.id = "sec" + i;
+  sec.style.setProperty("--c", color);
+  sec.innerHTML = '<div class="bhead"><h2>' + branch.title + "</h2>" + (branch.sub ? '<span class="bsub">' + branch.sub + "</span>" : "") + "</div>";
+  const inner = document.createElement("div");
+  inner.className = "binner";
+  renderChildren(branch.children || [], inner);
+  sec.appendChild(inner);
+  contentEl.appendChild(sec);
 });
-window.addEventListener("mousemove", e => {
-  if (!dragging) return;
-  tx = e.clientX - sx; ty = e.clientY - sy; apply();
-});
-window.addEventListener("mouseup", () => { dragging = false; viewport.classList.remove("dragging"); });
 
-viewport.addEventListener("wheel", e => {
-  e.preventDefault();
-  const factor = e.deltaY < 0 ? 1.1 : 0.9;
-  const rect = viewport.getBoundingClientRect();
-  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-  tx = mx - (mx - tx) * factor;
-  ty = my - (my - ty) * factor;
-  scale = Math.min(2.5, Math.max(0.3, scale * factor));
-  apply();
-}, { passive: false });
+/* 回到顶部 */
+const bt = document.getElementById("backtop");
+window.addEventListener("scroll", () => { bt.style.display = window.scrollY > 400 ? "block" : "none"; });
+bt.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 </script>
 </body>
 </html>
