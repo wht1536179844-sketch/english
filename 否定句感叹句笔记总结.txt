@@ -1,0 +1,23 @@
+否定句、感叹句笔记总结（第13节）
+
+一、否定句
+表示"否定"含义的句子就是否定句。三种句型各有各的否定加法：
+1. 主系表否定句 —— 系动词后 + not
+   He is not a teacher.（他不是老师）
+2. 主谓宾否定句 —— 主语后 + don't / doesn't
+   I don't like apples.（我不喜欢苹果）
+   He doesn't like apples.（他不喜欢苹果；他/她/它用 doesn't，后面动词变回原形）
+3. There be 否定句 —— there be 后 + no
+   There is no desk in the classroom.（教室里没有桌子）
+要点：先判断句型（主系表 / 主谓宾 / there be），再按对应方法加否定。
+
+二、感叹句
+表示"啊、哇、哟、太**、真**"等含义的句子就是感叹句。
+1. 感叹的成分是形容词、副词 —— 前面加 how，剩余句子成分照抄：
+   How beautiful she is!（她真漂亮啊！）
+2. 感叹的成分是名词 —— 前面加 what，剩余句子成分照抄：
+   What a beautiful girl she is!（她真是个漂亮姑娘啊！）
+3. 如果存在具体语境，剩余成分可省略：
+   How beautiful!（真漂亮！）
+   What a beautiful girl!（多漂亮的姑娘！）
+记法：形副用 how，名词用 what，剩下照抄不动；有语境后半截可省。
