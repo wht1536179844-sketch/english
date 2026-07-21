@@ -210,6 +210,33 @@ const grammarMap = {
   sub: "English Grammar",
   children: [
     {
+      title: "句型总纲 🧭",
+      sub: "任何句子必是三种之一",
+      color: "var(--branch1)",
+      children: [
+        {
+          title: "英语只存在三种句型",
+          detail: `<p>从广义上讲，英语只存在<b>三种句型</b>：<b>主系表、主谓宾、there be</b>。</p>
+                   <p class="rule">但凡是一个句子，那么它<b>必然是其中一种</b>——拿到句子先归类，再动手分析。</p>
+                   <p class="rule">① 主系表：<span class="en">He is a teacher.</span> <span class="zh">他是老师</span><br>
+                   ② 主谓宾：<span class="en">I see a doctor.</span> <span class="zh">我去看医生</span><br>
+                   ③ there be：<span class="en">There is a desk in the classroom.</span> <span class="zh">教室里有一张桌子</span></p>`
+        },
+        {
+          title: "主/宾/表是一个句子 → 用 that 引出",
+          detail: `<p>当<b>主语、宾语、表语</b>是<b>一个句子</b>时，直接用 <span class="en"><b>that</b></span> 引出这个句子。</p>
+                   <p class="rule"><span class="en">I know <b>that</b> he is honest.</span> <span class="zh">我知道他是诚实的</span></p>
+                   <p>💡 详见「<b>主宾表从句</b>」板块。</p>`
+        },
+        {
+          title: "主/宾/表是一个问句 → 疑问词提前",
+          detail: `<p>当<b>主语、宾语、表语</b>是<b>一个问句</b>时，直接<b>提前这个疑问词</b>，后面<b>按陈述句顺序</b>表达即可。</p>
+                   <p class="rule"><span class="en">I know <b>what</b> he did.</span> <span class="zh">我知道他做了什么</span></p>
+                   <p>💡 详见「主宾表从句」板块的「问句作从句」。</p>`
+        }
+      ]
+    },
+    {
       title: "主系表句型",
       sub: "主语 + 系动词 + 表语",
       color: "var(--branch1)",
@@ -577,6 +604,16 @@ const grammarMap = {
                    <p class="rule"><b>主语、表语</b>位置：<b>口语中可省略，正规语法中不可省略</b><br>
                    正规写作：<span class="en"><b>That</b> he is honest is true.</span>（that 必须保留）</p>
                    <p>💡 记法：<b>宾语随便省，主表正式留</b>。</p>`
+        },
+        {
+          title: "问句作从句：疑问词提前 ❓",
+          detail: `<p>当<b>主语、宾语、表语</b>是<b>一个问句</b>时，不用 that，直接<b>提前这个疑问词</b>（what / who / where / when / why / how…），后面<b>按陈述句顺序</b>表达即可。</p>
+                   <p class="rule"><b>宾语</b>位置：<span class="en">I know <b>what</b> he did.</span> <span class="zh">我知道他做了什么</span><br>
+                   <b>主语</b>位置：<span class="en"><b>Where</b> he is is a secret.</span> <span class="zh">他在哪里是个秘密</span><br>
+                   <b>表语</b>位置：<span class="en">The question is <b>who</b> did it.</span> <span class="zh">问题是谁干的</span></p>
+                   <p class="rule">⚠️ 注意：从句里<b>不再倒装</b>，疑问词后直接接陈述语序——<br>
+                   ✗ <span class="en">I know what did he do.</span>　✓ <span class="en">I know what he did.</span></p>
+                   <p>💡 记法：<b>疑问词打头，后面说人话（陈述语序）</b>。</p>`
         }
       ]
     }
